@@ -8,7 +8,8 @@ import {
   App as AntApp,
   Select,
   Tooltip,
-} from "antd"; // Import Tooltip
+  Modal, // Import Modal for custom messages
+} from "antd";
 import type { ColumnsType } from "antd/es/table";
 import "antd/dist/reset.css";
 import "./App.css"; // Global styles
@@ -36,7 +37,7 @@ interface PButton {
 
 interface EnteredNumber {
   key: number;
-  value: string; // e.g., "51X", "123" - This will now contain the original input string
+  value: string; // e.g., "51X", "123", "12>Right"
   channels: string[]; // This will still store channel IDs
   displayChannels: string[]; // New: to store pre-formatted channel strings for display
   amount: string;
@@ -46,6 +47,7 @@ interface EnteredNumber {
   totalMultiplier: number; // Added to store the calculated total multiplier
   numberOfCombinations: number; // New: To store the count of combinations
   combinedNumbers: string[]; // Storing combined numbers for tooltip display
+  rangeType?: string; // New: To store the selected type
 }
 
 interface ServerTime {
@@ -62,7 +64,9 @@ interface Server {
 }
 
 // Regex for valid FINAL input patterns (used in handleEnterClick)
-const VALID_FINAL_INPUT_REGEX = /^(\d{2}|\d{3})[X>]?$/;
+// Regex for valid FINAL input patterns: ##, ###, ##X, ##>, ###X, ###>
+const VALID_FINAL_INPUT_REGEX = /^(\d{2}|\d{3})(X|>.*)?$/;
+const RANGE_INPUT_REGEX = /^(\d{2}|\d{3})>(.*)$/; // Regex to extract digits and type
 
 /**
  * Helper function to generate permutations for two digits.
@@ -100,10 +104,176 @@ const getThreeDigitPermutations = (numStr: string): string[] => {
       permute(arr.slice(), memoized.concat(cur));
       arr.splice(i, 0, cur[0]);
     }
-    return result;
+    return Array.from(new Set(result)); // Ensure unique permutations
   };
-  // Use a Set to store unique permutations
-  return Array.from(new Set(permute(chars)));
+  return permute(chars);
+};
+
+/**
+ * Generates combinations based on the selected type for 2-digit numbers.
+ * @param digits The 2-digit number string.
+ * @param rangeType The selected type (e.g., "Right", "Left").
+ * @returns An array of combined number strings.
+ */
+const getTwoDigitRangeCombinations = (
+  digits: string,
+  rangeType: string
+): string[] => {
+  if (digits.length !== 2) return [digits];
+  const d1 = parseInt(digits[0]);
+  const d2 = parseInt(digits[1]);
+  const result: string[] = [];
+
+  switch (rangeType) {
+    case "Right": // Example: 10> -> 10, 11, ..., 19 (Fix first digit, vary second)
+      for (let i = d2; i <= 9; i++) {
+        result.push(`${d1}${i}`);
+      }
+      return result;
+    case "Left": // Example: 01> -> 01, 11, ..., 91 (Fix second digit, vary first)
+      for (let i = d1; i <= 9; i++) {
+        result.push(`${i}${d2}`);
+      }
+      return result;
+    default:
+      return [digits];
+  }
+};
+
+/**
+ * Generates combinations based on the selected type for 3-digit numbers.
+ * @param digits The 3-digit number string.
+ * @param rangeType The selected type.
+ * @returns An array of combined number strings.
+ */
+const getThreeDigitRangeCombinations = (
+  digits: string,
+  rangeType: string
+): string[] => {
+  if (digits.length !== 3) return [digits];
+  const d1 = parseInt(digits[0]);
+  const d2 = parseInt(digits[1]);
+  const d3 = parseInt(digits[2]);
+  const result: string[] = [];
+
+  switch (rangeType) {
+    case "Right": // Fix first two (d1, d2), vary third (d3 to 9)
+      for (let i = d3; i <= 9; i++) {
+        result.push(`${d1}${d2}${i}`);
+      }
+      break;
+    case "Left": // Fix last two (d2, d3), vary first (d1 to 9)
+      for (let i = d1; i <= 9; i++) {
+        result.push(`${i}${d2}${d3}`);
+      }
+      break;
+    case "Middle": // Fix first and third (d1, d3), vary second (d2 to 9)
+      for (let i = d2; i <= 9; i++) {
+        result.push(`${d1}${i}${d3}`);
+      }
+      break;
+    case "Middle + Right": // Fix first (d1), vary middle (d2 to 9) and right (d3 to 9)
+      for (let i = d2; i <= 9; i++) {
+        for (let j = d3; j <= 9; j++) {
+          result.push(`${d1}${i}${j}`);
+        }
+      }
+      break;
+    case "Left + Middle": // Fix third (d3), vary left (d1 to 9) and middle (d2 to 9)
+      for (let i = d1; i <= 9; i++) {
+        for (let j = d2; j <= 9; j++) {
+          result.push(`${i}${j}${d3}`);
+        }
+      }
+      break;
+    case "Left + Right": // Fix middle (d2), vary left (d1 to 9) and right (d3 to 9)
+      for (let i = d1; i <= 9; i++) {
+        for (let j = d3; j <= 9; j++) {
+          result.push(`${i}${d2}${j}`);
+        }
+      }
+      break;
+    default:
+      result.push(digits);
+  }
+  return Array.from(new Set(result)); // Ensure uniqueness for combined ranges
+};
+
+/**
+ * Determines available options based on digits and syntax type,
+ * considering the presence and position of '0'.
+ * @param digits The number string (2 or 3 digits).
+ * @param syntaxType "2D" or "3D".
+ * @returns An array of { label, value } for Select options.
+ */
+const getRangeOptions = (
+  digits: string,
+  syntaxType: "2D" | "3D"
+): { label: string; value: string }[] => {
+  const options: { label: string; value: string }[] = [];
+
+  if (syntaxType === "2D") {
+    const hasZeroLeft = digits[0] === "0";
+    const hasZeroRight = digits[1] === "0";
+
+    if (hasZeroLeft) {
+      // e.g., 01
+      options.push({ label: "Left", value: "Left" });
+    }
+    if (hasZeroRight) {
+      // e.g., 10
+      options.push({ label: "Right", value: "Right" });
+    }
+  } else if (syntaxType === "3D") {
+    const hasZeroLeft = digits[0] === "0";
+    const hasZeroMiddle = digits[1] === "0";
+    const hasZeroRight = digits[2] === "0";
+
+    // Base options for 3D
+    const all3DOptions = [
+      // { label: "Right", value: "Right" },
+      // { label: "Middle + Right", value: "Middle + Right" },
+      // { label: "Left", value: "Left" },
+      // { label: "Left + Middle", value: "Left + Middle" },
+      // { label: "Middle", value: "Middle" },
+      // { label: "Left + Right", value: "Left + Right" },
+    ];
+
+    if (hasZeroLeft) {
+      all3DOptions.push({ label: "Left", value: "Left" });
+    }
+    if (hasZeroRight) {
+      all3DOptions.push({ label: "Right", value: "Right" });
+    }
+    if (hasZeroMiddle) {
+      all3DOptions.push({ label: "Middle", value: "Middle" });
+    }
+    if (hasZeroLeft && hasZeroMiddle) {
+      all3DOptions.push({
+        label: "Left + Middle",
+        value: "Left + Middle",
+      });
+    }
+
+    if (hasZeroLeft && hasZeroRight) {
+      all3DOptions.push({
+        label: "Left + Right",
+        value: "Left + Right",
+      });
+    }
+
+    if (hasZeroMiddle && hasZeroRight) {
+      all3DOptions.push({
+        label: "Middle + Right",
+        value: "Middle + Right",
+      });
+    }
+
+    // Fallback for other zero combinations not explicitly covered
+    // This part might need more specific rules if user provides more examples
+    return all3DOptions;
+  }
+  return options;
 };
 
 function App() {
@@ -123,6 +293,17 @@ function App() {
   const [channelsButtons, setChannelsButtons] = useState<ChannelButton[]>([]);
   const [pButtons, setPButtons] = useState<PButton[]>([]);
   const [servers, setServers] = useState<Server[]>([]); // State to hold servers data
+
+  // New states for dropdown
+  const [showRangeModal, setShowRangeModal] = useState<boolean>(false);
+  const [currentDigitsForRange, setCurrentDigitsForRange] =
+    useState<string>("");
+  const [availableRangeOptions, setAvailableRangeOptions] = useState<
+    { label: string; value: string }[]
+  >([]);
+  const [tempSelectedRange, setTempSelectedRange] = useState<
+    string | undefined
+  >(undefined);
 
   // Fetch servers data from JSON on component mount
   useEffect(() => {
@@ -165,6 +346,25 @@ function App() {
    * This replaces the direct handleNumberClick in App.tsx.
    */
   const handleCalculatorInputChange = useCallback((newInput: string) => {
+    // If the new input ends with '>', trigger the modal
+    if (
+      newInput.endsWith(">") &&
+      newInput.length > 1 &&
+      !newInput.includes("X")
+    ) {
+      const digits = newInput.slice(0, -1); // Get digits before '>'
+      const syntaxType =
+        digits.length === 2 ? "2D" : digits.length === 3 ? "3D" : undefined;
+
+      if (syntaxType) {
+        setCurrentDigitsForRange(digits);
+        setAvailableRangeOptions(getRangeOptions(digits, syntaxType));
+        setTempSelectedRange(undefined); // Reset temp selection
+        setShowRangeModal(true);
+        setInput(digits); // Set input back to just digits, will be updated after selection
+        return;
+      }
+    }
     setInput(newInput);
   }, []);
 
@@ -248,33 +448,64 @@ function App() {
       return;
     }
 
-    // Determine syntax type (2D or 3D) and combinations
+    // Determine syntax type (2D or 3D), combined numbers, and number of combinations
     let syntaxType: "2D" | "3D";
-    const digitsPart = input.replace(/[X>]/, ""); // Remove X or > to get just the digits
+    let digitsPart: string;
     let combinedNumbers: string[] = [];
-    let numberOfCombinations = 1; // Default to 1 for non-X inputs
+    let numberOfCombinations = 1;
+    let selectedRangeType: string | undefined = undefined;
 
-    if (digitsPart.length === 2) {
-      syntaxType = "2D";
-      if (input.endsWith("X")) {
-        combinedNumbers = getTwoDigitPermutations(digitsPart);
+    const rangeMatch = input.match(RANGE_INPUT_REGEX);
+
+    if (rangeMatch) {
+      digitsPart = rangeMatch[1];
+      selectedRangeType = rangeMatch[2]; // e.g., "Right"
+
+      if (digitsPart.length === 2) {
+        syntaxType = "2D";
+        combinedNumbers = getTwoDigitRangeCombinations(
+          digitsPart,
+          selectedRangeType
+        );
+        numberOfCombinations = combinedNumbers.length;
+      } else if (digitsPart.length === 3) {
+        syntaxType = "3D";
+        combinedNumbers = getThreeDigitRangeCombinations(
+          digitsPart,
+          selectedRangeType
+        );
         numberOfCombinations = combinedNumbers.length;
       } else {
-        combinedNumbers = [digitsPart]; // For "##" or "##>"
-        numberOfCombinations = 1;
-      }
-    } else if (digitsPart.length === 3) {
-      syntaxType = "3D";
-      if (input.endsWith("X")) {
-        combinedNumbers = getThreeDigitPermutations(digitsPart);
-        numberOfCombinations = combinedNumbers.length;
-      } else {
-        combinedNumbers = [digitsPart]; // For "###" or "###>"
-        numberOfCombinations = 1;
+        message.error("Invalid number format for based on digit count.");
+        return;
       }
     } else {
-      message.error("Invalid number format based on digit count.");
-      return;
+      // Handle 'X' or plain numbers
+      digitsPart = input.replace(/[X>]/, ""); // Remove 'X' or potential leftover '>'
+      if (digitsPart.length === 2) {
+        syntaxType = "2D";
+        if (input.endsWith("X")) {
+          combinedNumbers = getTwoDigitPermutations(digitsPart);
+          numberOfCombinations = combinedNumbers.length;
+        } else {
+          // Plain 2-digit number
+          combinedNumbers = [digitsPart];
+          numberOfCombinations = 1;
+        }
+      } else if (digitsPart.length === 3) {
+        syntaxType = "3D";
+        if (input.endsWith("X")) {
+          combinedNumbers = getThreeDigitPermutations(digitsPart);
+          numberOfCombinations = combinedNumbers.length;
+        } else {
+          // Plain 3-digit number
+          combinedNumbers = [digitsPart];
+          numberOfCombinations = 1;
+        }
+      } else {
+        message.error("Invalid number format based on digit count.");
+        return;
+      }
     }
 
     // Calculate total multiplier first
@@ -304,7 +535,7 @@ function App() {
       ...prevNumbers,
       {
         key: prevNumbers.length, // Unique key for table row
-        value: input, // Store the original input string
+        value: input, // Store the original input string (e.g., "12>Right")
         channels: selectedChannelIdsArray, // Store channel IDs
         displayChannels: displayChannelsArray, // Store the pre-formatted display string
         amount: parsedAmount.toFixed(2),
@@ -314,11 +545,11 @@ function App() {
         totalMultiplier: totalMultiplier, // Store the calculated total multiplier
         numberOfCombinations: numberOfCombinations,
         combinedNumbers: combinedNumbers, // Store the number of combinations
+        rangeType: selectedRangeType, // Store the selected type
       },
     ]);
 
-    // Optionally, reset input fields and button states after successful entry
-    // Uncomment the following lines if you want to clear the inputs after "Enter"
+    // // Reset input fields and button states after successful entry
     // setInput("");
     // setAmountInput("");
     // setChannelsButtons((prev) =>
@@ -443,7 +674,15 @@ function App() {
       key: "value",
       width: "18%",
       render: (text, record) => {
-        // Only show tooltip if there are combinations (i.e., 'X' was used)
+        // Determine the display value for the number
+        let displayNum = record.value;
+        if (record.rangeType) {
+          // If it's a range, display "digits>RangeType"
+          const digits = record.value.split(">")[0];
+          displayNum = `${digits}> (${record.rangeType})`;
+        }
+
+        // Only show tooltip if there are combinations (i.e., 'X' or was used)
         if (record.numberOfCombinations > 1) {
           return (
             <Tooltip
@@ -453,14 +692,14 @@ function App() {
                 </div>
               }
             >
-              <span>{record.value} </span>
+              <span>{displayNum} </span>
               <span style={{ color: "#1890ff" }}>
                 ({record.numberOfCombinations})
               </span>
             </Tooltip>
           );
         }
-        return <span>{record.value}</span>;
+        return <span>{displayNum}</span>;
       },
     },
     {
@@ -535,6 +774,22 @@ function App() {
   const availableServerTimes = selectedServer
     ? servers.find((s) => s.id === selectedServer)?.times || []
     : [];
+
+  const handleRangeModalOk = () => {
+    if (tempSelectedRange) {
+      // Update the main input with the selected range
+      setInput(`${currentDigitsForRange}>${tempSelectedRange}`);
+      setShowRangeModal(false);
+    } else {
+      message.error("Please select a option.");
+    }
+  };
+
+  const handleRangeModalCancel = () => {
+    setShowRangeModal(false);
+    // Optionally clear the input if the user cancels selection
+    // setInput("");
+  };
 
   return (
     <AntApp>
@@ -678,6 +933,30 @@ function App() {
           </Col>
         </Row>
       </div>
+
+      {/* Selection Modal */}
+      <Modal
+        title="Select Option"
+        open={showRangeModal}
+        onOk={handleRangeModalOk}
+        onCancel={handleRangeModalCancel}
+        okText="Select"
+        cancelText="Cancel"
+      >
+        <p>Please select a option for "{currentDigitsForRange}":</p>
+        <Select
+          placeholder="Select Range"
+          style={{ width: "100%" }}
+          onChange={(value: string) => setTempSelectedRange(value)}
+          value={tempSelectedRange}
+        >
+          {availableRangeOptions.map((option) => (
+            <Option key={option.value} value={option.value}>
+              {option.label}
+            </Option>
+          ))}
+        </Select>
+      </Modal>
     </AntApp>
   );
 }

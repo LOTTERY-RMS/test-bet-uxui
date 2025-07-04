@@ -27,37 +27,38 @@ const CalculatorPad: React.FC<CalculatorPadProps> = ({
    */
   const handleNumberClick = useCallback(
     (char: string) => {
-      onInputChange((prevInput: string) => {
-        // Clear button functionality
-        if (char === "C") {
-          return "";
-        }
+      let updatedInput = input; // Start with the current input prop value
 
-        const newPotentialInput = prevInput + char;
+      // Clear button functionality
+      if (char === "C") {
+        updatedInput = "";
+      } else {
+        const newPotentialInput = input + char;
 
         // Allow empty input initially
         if (newPotentialInput === "") {
-          return newPotentialInput;
+          updatedInput = newPotentialInput;
         }
-
         // Allow numerical prefixes (up to 3 digits)
-        if (VALID_NUMERIC_PREFIX_REGEX.test(newPotentialInput)) {
-          return newPotentialInput;
+        else if (VALID_NUMERIC_PREFIX_REGEX.test(newPotentialInput)) {
+          updatedInput = newPotentialInput;
         }
-
         // Allow final valid input patterns (e.g., 12, 123, 12X, 123>)
-        if (VALID_FINAL_INPUT_REGEX.test(newPotentialInput)) {
-          return newPotentialInput;
+        else if (VALID_FINAL_INPUT_REGEX.test(newPotentialInput)) {
+          updatedInput = newPotentialInput;
         }
-
         // If none of the above, it's an invalid input sequence
-        message.error(
-          "Invalid number format. Please follow ##, ###, ##X, ##>, ###X, or ###>."
-        );
-        return prevInput; // Revert to previous valid input
-      });
+        else {
+          message.error(
+            "Invalid number format. Please follow ##, ###, ##X, ##>, ###X, or ###>."
+          );
+          // If invalid, revert to the previous valid input (which is the current 'input' prop)
+          updatedInput = input;
+        }
+      }
+      onInputChange(updatedInput); // Pass the final string directly
     },
-    [message, onInputChange]
+    [input, message, onInputChange] // Add 'input' to dependencies
   );
 
   return (

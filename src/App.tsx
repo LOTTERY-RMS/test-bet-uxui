@@ -239,13 +239,22 @@ const getRangeOptions = (
       options.push({ label: "Middle", value: "Middle" });
     }
     if (hasZeroLeft && hasZeroMiddle) {
-      options.push({ label: "Left + Middle", value: "Left + Middle" });
+      options.push({
+        label: "Left + Middle",
+        value: "Left + Middle",
+      });
     }
     if (hasZeroLeft && hasZeroRight) {
-      options.push({ label: "Left + Right", value: "Left + Right" });
+      options.push({
+        label: "Left + Right",
+        value: "Left + Right",
+      });
     }
     if (hasZeroMiddle && hasZeroRight) {
-      options.push({ label: "Middle + Right", value: "Middle + Right" });
+      options.push({
+        label: "Middle + Right",
+        value: "Middle + Right",
+      });
     }
   }
   return Array.from(new Set(options)); // Ensure unique options
@@ -320,28 +329,44 @@ function App() {
    * Callback for CalculatorPad to update the main input state.
    * This replaces the direct handleNumberClick in App.tsx.
    */
-  const handleCalculatorInputChange = useCallback((newInput: string) => {
-    // If the new input ends with '>', trigger the range modal
-    if (
-      newInput.endsWith(">") &&
-      newInput.length > 1 &&
-      !newInput.includes("X")
-    ) {
-      const digits = newInput.slice(0, -1); // Get digits before '>'
-      const syntaxType =
-        digits.length === 2 ? "2D" : digits.length === 3 ? "3D" : undefined;
+  const handleCalculatorInputChange = useCallback(
+    (newInput: string) => {
+      // If the new input ends with '>', trigger the range modal
+      if (
+        newInput.endsWith(">") &&
+        newInput.length > 1 &&
+        !newInput.includes("X")
+      ) {
+        const digits = newInput.slice(0, -1); // Get digits before '>'
+        const syntaxType =
+          digits.length === 2 ? "2D" : digits.length === 3 ? "3D" : undefined;
 
-      if (syntaxType) {
-        setCurrentDigitsForRange(digits);
-        setAvailableRangeOptions(getRangeOptions(digits, syntaxType));
-        setTempSelectedRange(undefined); // Reset temp selection
-        setShowRangeModal(true);
-        setInput(digits); // Set input back to just digits, will be updated after selection
-        return;
+        if (syntaxType) {
+          const options = getRangeOptions(digits, syntaxType);
+
+          if (options.length === 0) {
+            message.error(`No range options available for "${digits}".`);
+            setInput(digits); // Revert input to just digits
+            return;
+          } else if (options.length === 1) {
+            // Automatically select the single option
+            setInput(`${digits}>${options[0].value}`);
+            return;
+          } else {
+            // More than one option, show modal
+            setCurrentDigitsForRange(digits);
+            setAvailableRangeOptions(options);
+            setTempSelectedRange(undefined); // Reset temp selection
+            setShowRangeModal(true);
+            setInput(digits); // Set input back to just digits, will be updated after selection
+            return;
+          }
+        }
       }
-    }
-    setInput(newInput);
-  }, []);
+      setInput(newInput);
+    },
+    [message]
+  ); // Added 'message' to dependencies
 
   /**
    * Handles changes in the amount input field.
@@ -434,7 +459,7 @@ function App() {
 
     if (rangeMatch) {
       digitsPart = rangeMatch[1];
-      selectedRangeType = rangeMatch[2]; // e.g., "Range Right"
+      selectedRangeType = rangeMatch[2]; // e.g., "Right"
 
       if (digitsPart.length === 2) {
         syntaxType = "2D";
@@ -490,7 +515,7 @@ function App() {
     selectedActiveChannels.forEach((channel) => {
       const multiplier = channel.multipliers[syntaxType];
       totalMultiplier += multiplier;
-      // Store the full formatted string for tooltip, and just the label for main display
+      // Store the full formatted string for tooltip, and just the label for for main display
       displayChannelsArray.push(
         `${channel.label} (${syntaxType}x${multiplier})`
       );
@@ -526,11 +551,11 @@ function App() {
 
     // Reset input fields and button states after successful entry
     setInput("");
-    setAmountInput("");
-    setChannelsButtons((prev) =>
-      prev.map((btn) => ({ ...btn, isActive: false }))
-    );
-    setPButtons((prev) => prev.map((btn) => ({ ...btn, isActive: false })));
+    // setAmountInput("");
+    // setChannelsButtons((prev) =>
+    //   prev.map((btn) => ({ ...btn, isActive: false }))
+    // );
+    // setPButtons((prev) => prev.map((btn) => ({ ...btn, isActive: false })));
   };
 
   /**

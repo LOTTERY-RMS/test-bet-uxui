@@ -37,7 +37,7 @@ interface PButton {
 
 interface EnteredNumber {
   key: number;
-  value: string; // e.g., "51X", "123", "12>Right"
+  value: string; // e.g., "51X", "123", "12>Range Right"
   channels: string[]; // This will still store channel IDs
   displayChannels: string[]; // New: to store pre-formatted channel strings for display
   amount: string;
@@ -47,7 +47,7 @@ interface EnteredNumber {
   totalMultiplier: number; // Added to store the calculated total multiplier
   numberOfCombinations: number; // New: To store the count of combinations
   combinedNumbers: string[]; // Storing combined numbers for tooltip display
-  rangeType?: string; // New: To store the selected type
+  rangeType?: string; // New: To store the selected range type
 }
 
 interface ServerTime {
@@ -63,10 +63,9 @@ interface Server {
   times: ServerTime[];
 }
 
-// Regex for valid FINAL input patterns (used in handleEnterClick)
 // Regex for valid FINAL input patterns: ##, ###, ##X, ##>, ###X, ###>
 const VALID_FINAL_INPUT_REGEX = /^(\d{2}|\d{3})(X|>.*)?$/;
-const RANGE_INPUT_REGEX = /^(\d{2}|\d{3})>(.*)$/; // Regex to extract digits and type
+const RANGE_INPUT_REGEX = /^(\d{2}|\d{3})>(.*)$/; // Regex to extract digits and range type
 
 /**
  * Helper function to generate permutations for two digits.
@@ -110,9 +109,9 @@ const getThreeDigitPermutations = (numStr: string): string[] => {
 };
 
 /**
- * Generates combinations based on the selected type for 2-digit numbers.
+ * Generates combinations based on the selected range type for 2-digit numbers.
  * @param digits The 2-digit number string.
- * @param rangeType The selected type (e.g., "Right", "Left").
+ * @param rangeType The selected range type (e.g., "Right", "Left").
  * @returns An array of combined number strings.
  */
 const getTwoDigitRangeCombinations = (
@@ -141,9 +140,9 @@ const getTwoDigitRangeCombinations = (
 };
 
 /**
- * Generates combinations based on the selected type for 3-digit numbers.
+ * Generates combinations based on the selected range type for 3-digit numbers.
  * @param digits The 3-digit number string.
- * @param rangeType The selected type.
+ * @param rangeType The selected range type.
  * @returns An array of combined number strings.
  */
 const getThreeDigitRangeCombinations = (
@@ -200,7 +199,7 @@ const getThreeDigitRangeCombinations = (
 };
 
 /**
- * Determines available options based on digits and syntax type,
+ * Determines available range options based on digits and syntax type,
  * considering the presence and position of '0'.
  * @param digits The number string (2 or 3 digits).
  * @param syntaxType "2D" or "3D".
@@ -229,51 +228,27 @@ const getRangeOptions = (
     const hasZeroMiddle = digits[1] === "0";
     const hasZeroRight = digits[2] === "0";
 
-    // Base options for 3D
-    const all3DOptions = [
-      // { label: "Right", value: "Right" },
-      // { label: "Middle + Right", value: "Middle + Right" },
-      // { label: "Left", value: "Left" },
-      // { label: "Left + Middle", value: "Left + Middle" },
-      // { label: "Middle", value: "Middle" },
-      // { label: "Left + Right", value: "Left + Right" },
-    ];
-
+    // Build options based on which positions have a '0'
     if (hasZeroLeft) {
-      all3DOptions.push({ label: "Left", value: "Left" });
+      options.push({ label: "Left", value: "Left" });
     }
     if (hasZeroRight) {
-      all3DOptions.push({ label: "Right", value: "Right" });
+      options.push({ label: "Right", value: "Right" });
     }
     if (hasZeroMiddle) {
-      all3DOptions.push({ label: "Middle", value: "Middle" });
+      options.push({ label: "Middle", value: "Middle" });
     }
     if (hasZeroLeft && hasZeroMiddle) {
-      all3DOptions.push({
-        label: "Left + Middle",
-        value: "Left + Middle",
-      });
+      options.push({ label: "Left + Middle", value: "Left + Middle" });
     }
-
     if (hasZeroLeft && hasZeroRight) {
-      all3DOptions.push({
-        label: "Left + Right",
-        value: "Left + Right",
-      });
+      options.push({ label: "Left + Right", value: "Left + Right" });
     }
-
     if (hasZeroMiddle && hasZeroRight) {
-      all3DOptions.push({
-        label: "Middle + Right",
-        value: "Middle + Right",
-      });
+      options.push({ label: "Middle + Right", value: "Middle + Right" });
     }
-
-    // Fallback for other zero combinations not explicitly covered
-    // This part might need more specific rules if user provides more examples
-    return all3DOptions;
   }
-  return options;
+  return Array.from(new Set(options)); // Ensure unique options
 };
 
 function App() {
@@ -294,7 +269,7 @@ function App() {
   const [pButtons, setPButtons] = useState<PButton[]>([]);
   const [servers, setServers] = useState<Server[]>([]); // State to hold servers data
 
-  // New states for dropdown
+  // New states for Range dropdown
   const [showRangeModal, setShowRangeModal] = useState<boolean>(false);
   const [currentDigitsForRange, setCurrentDigitsForRange] =
     useState<string>("");
@@ -346,7 +321,7 @@ function App() {
    * This replaces the direct handleNumberClick in App.tsx.
    */
   const handleCalculatorInputChange = useCallback((newInput: string) => {
-    // If the new input ends with '>', trigger the modal
+    // If the new input ends with '>', trigger the range modal
     if (
       newInput.endsWith(">") &&
       newInput.length > 1 &&
@@ -459,7 +434,7 @@ function App() {
 
     if (rangeMatch) {
       digitsPart = rangeMatch[1];
-      selectedRangeType = rangeMatch[2]; // e.g., "Right"
+      selectedRangeType = rangeMatch[2]; // e.g., "Range Right"
 
       if (digitsPart.length === 2) {
         syntaxType = "2D";
@@ -535,7 +510,7 @@ function App() {
       ...prevNumbers,
       {
         key: prevNumbers.length, // Unique key for table row
-        value: input, // Store the original input string (e.g., "12>Right")
+        value: input, // Store the original input string (e.g., "12>Range Right")
         channels: selectedChannelIdsArray, // Store channel IDs
         displayChannels: displayChannelsArray, // Store the pre-formatted display string
         amount: parsedAmount.toFixed(2),
@@ -549,13 +524,13 @@ function App() {
       },
     ]);
 
-    // // Reset input fields and button states after successful entry
-    // setInput("");
-    // setAmountInput("");
-    // setChannelsButtons((prev) =>
-    //   prev.map((btn) => ({ ...btn, isActive: false }))
-    // );
-    // setPButtons((prev) => prev.map((btn) => ({ ...btn, isActive: false })));
+    // Reset input fields and button states after successful entry
+    setInput("");
+    setAmountInput("");
+    setChannelsButtons((prev) =>
+      prev.map((btn) => ({ ...btn, isActive: false }))
+    );
+    setPButtons((prev) => prev.map((btn) => ({ ...btn, isActive: false })));
   };
 
   /**

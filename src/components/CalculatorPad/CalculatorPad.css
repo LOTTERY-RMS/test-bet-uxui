@@ -1,0 +1,97 @@
+/* src/components/CalculatorPad/CalculatorPad.css */
+.calculator {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  flex-basis: 320px; /* Fixed width */
+  flex-grow: 0;
+  flex-shrink: 0;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.display {
+  background-color: #222;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: right;
+  margin-bottom: 10px;
+  min-height: 80px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.result {
+  color: #ffffff;
+  font-size: 2.8em;
+  font-weight: 300;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.input-grid .ant-row {
+  width: 100%;
+}
+
+.input-grid .ant-col {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Styling for all calculator buttons */
+.antd-calc-button.ant-btn {
+  width: 80px;
+  height: 80px;
+  font-size: 1.8em;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.antd-calc-button.ant-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  background-color: #e0e0e0;
+}
+
+.antd-calc-button.ant-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #d0d0d0;
+}
+
+.antd-calc-button-clear.ant-btn {
+  width: 100%;
+  border-radius: 10px;
+  background-color: #ff4d4f; /* Example clear button color */
+  color: #ffffff;
+  font-size: 1.5em;
+  height: 60px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.antd-calc-button-clear.ant-btn:hover {
+  background-color: #ff7875;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.antd-calc-button-clear.ant-btn:active {
+  background-color: #d9363e;
+  transform: translateY(0);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}

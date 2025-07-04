@@ -1,8 +1,13 @@
-import { useCallback, useState } from "react";
-import { Button, Row, Col, Table, Input, App as AntApp } from "antd";
+import { useCallback, useState, useEffect } from "react";
+import { Button, Row, Col, Table, Input, App as AntApp, Select } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import "antd/dist/reset.css";
-import "./App.css";
+import "./App.css"; // Global styles
+
+// Import the CalculatorPad component
+import CalculatorPad from "./components/CalculatorPad/CalculatorPad";
+
+const { Option } = Select;
 
 // Define interfaces for your data structures
 interface ChannelButton {
@@ -10,7 +15,7 @@ interface ChannelButton {
   label: string;
   isActive: boolean;
   conflictsWith?: string[];
-  multiplier: number;
+  multipliers: { "2D": number; "3D": number }; // Changed to an object
 }
 
 interface PButton {
@@ -26,136 +31,104 @@ interface EnteredNumber {
   channels: string[];
   amount: string;
   totalAmount: string;
-  syntaxType: string; // New property: "2D" or "3D"
+  syntaxType: string; // "2D" or "3D"
+  currency: string;
 }
 
-// Regex for valid FINAL input patterns: ##, ###, ##X, ##>, ###X, ###>
+interface ServerTime {
+  id: string;
+  label: string;
+  channels: ChannelButton[];
+  pButtons: PButton[];
+}
+
+interface Server {
+  id: string;
+  label: string;
+  times: ServerTime[];
+}
+
+// Regex for valid FINAL input patterns (used in handleEnterClick)
 const VALID_FINAL_INPUT_REGEX = /^(\d{2}|\d{3})[X>]?$/;
 
-// Regex for valid intermediate numerical input (up to 3 digits)
-const VALID_NUMERIC_PREFIX_REGEX = /^\d{1,3}$/;
-
 function App() {
-  const [input, setInput] = useState<string>("");
+  const [input, setInput] = useState<string>(""); // State for calculator display
   const [enteredNumbers, setEnteredNumbers] = useState<EnteredNumber[]>([]);
   const [amountInput, setAmountInput] = useState<string>("");
+  const [selectedServer, setSelectedServer] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedServerTime, setSelectedServerTime] = useState<
+    string | undefined
+  >(undefined);
+  const [selectedCurrency, setSelectedCurrency] = useState<string>("USD");
 
   const { message } = AntApp.useApp();
 
-  const [channelsButtons, setChannelsButtons] = useState<ChannelButton[]>([
-    {
-      id: "A",
-      label: "A",
-      isActive: false,
-      conflictsWith: ["Lo"],
-      multiplier: 1,
-    },
-    {
-      id: "B",
-      label: "B",
-      isActive: false,
-      conflictsWith: ["Lo"],
-      multiplier: 1,
-    },
-    {
-      id: "C",
-      label: "C",
-      isActive: false,
-      conflictsWith: ["Lo"],
-      multiplier: 1,
-    },
-    {
-      id: "D",
-      label: "D",
-      isActive: false,
-      conflictsWith: ["Lo"],
-      multiplier: 1,
-    },
-    { id: "Ho", label: "Ho", isActive: false, multiplier: 1 },
-    { id: "I", label: "I", isActive: false, multiplier: 1 },
-    { id: "N", label: "N", isActive: false, multiplier: 1 },
-    {
-      id: "Lo",
-      label: "Lo",
-      isActive: false,
-      conflictsWith: ["A", "B", "C", "D"],
-      multiplier: 19,
-    },
-  ]);
+  const [channelsButtons, setChannelsButtons] = useState<ChannelButton[]>([]);
+  const [pButtons, setPButtons] = useState<PButton[]>([]);
+  const [servers, setServers] = useState<Server[]>([]); // State to hold servers data
 
-  const [pButtons, setPButtons] = useState<PButton[]>([
-    {
-      id: "4P",
-      label: "4P",
-      isActive: false,
-      channelsToActivate: ["A", "B", "C", "D"],
-    },
-    {
-      id: "5P",
-      label: "5P",
-      isActive: false,
-      channelsToActivate: ["A", "B", "C", "D", "Ho"],
-    },
-    {
-      id: "6P",
-      label: "6P",
-      isActive: false,
-      channelsToActivate: ["A", "B", "C", "D", "Ho", "I"],
-    },
-    {
-      id: "7P",
-      label: "7P",
-      isActive: false,
-      channelsToActivate: ["A", "B", "C", "D", "Ho", "I", "N"],
-    },
-  ]);
-
-  // --- REFINED handleNumberClick logic for syntax ---
-
-  const handleNumberClick = useCallback(
-    (char: string) => {
-      setInput((prevInput) => {
-        // Handle Clear button
-
-        const newPotentialInput = prevInput + char;
-
-        console.log({ prevInput, char });
-
-        if (char === "C") {
-          return "";
+  // Fetch servers data from JSON on component mount
+  useEffect(() => {
+    fetch("/data/servers.json") // Assumes servers.json is in the public/data directory
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-        // Rule 1: Always allow initial empty input
-        if (newPotentialInput === "") {
-          return newPotentialInput;
-        }
+        return response.json();
+      })
+      .then((data) => setServers(data))
+      .catch((error) =>
+        message.error("Failed to load server data: " + error.message)
+      );
+  }, [message]);
 
-        // Rule 2: If the newPotentialInput is a digit
-        if (VALID_NUMERIC_PREFIX_REGEX.test(newPotentialInput)) {
-          return newPotentialInput;
-        }
-
-        // Rule 3: If the newPotentialInput is a Correct
-        if (VALID_FINAL_INPUT_REGEX.test(newPotentialInput)) {
-          return newPotentialInput;
-        }
-
-        message.error(
-          "Invalid number format. Please follow ##, ###, ##X, ##>, ###X, or ###>."
+  // Effect to update channels and p-buttons when server time changes
+  useEffect(() => {
+    if (selectedServer && selectedServerTime && servers.length > 0) {
+      const server = servers.find((s) => s.id === selectedServer);
+      const time = server?.times.find((t) => t.id === selectedServerTime);
+      if (time) {
+        // Reset active state for buttons when server time changes
+        setChannelsButtons(
+          time.channels.map((channel) => ({ ...channel, isActive: false }))
         );
-        return prevInput;
-      });
-    },
-    [message]
-  );
-  // --- END REFINED handleNumberClick ---
+        setPButtons(
+          time.pButtons.map((pBtn) => ({ ...pBtn, isActive: false }))
+        );
+      }
+    } else {
+      // Clear buttons if no server or server time is selected
+      setChannelsButtons([]);
+      setPButtons([]);
+    }
+  }, [selectedServer, selectedServerTime, servers]); // Add servers to dependency array
 
+  /**
+   * Callback for CalculatorPad to update the main input state.
+   * This replaces the direct handleNumberClick in App.tsx.
+   */
+  const handleCalculatorInputChange = useCallback((newInput: string) => {
+    setInput(newInput);
+  }, []);
+
+  /**
+   * Handles changes in the amount input field.
+   * Allows only valid numerical input (including decimals).
+   */
   const handleAmountInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    // Regex to allow only numbers and a single decimal point
     if (/^\d*\.?\d*$/.test(value) || value === "") {
       setAmountInput(value);
     }
   };
 
+  /**
+   * Handles the blur event for the amount input field.
+   * Formats the amount to two decimal places or clears if invalid.
+   */
   const handleAmountInputBlur = () => {
     const value = amountInput.trim();
     if (value === "") {
@@ -172,13 +145,20 @@ function App() {
     setAmountInput(parsedValue.toFixed(2));
   };
 
+  /**
+   * Handles the "Enter" button click.
+   * Validates all inputs (number, channels, amount, server, time, currency)
+   * Calculates total amount and adds the entry to the table.
+   * Resets input fields and selected buttons.
+   */
   const handleEnterClick = () => {
+    // Basic validations
     if (input.trim() === "") {
       message.error("Please enter a number before pressing Enter.");
       return;
     }
 
-    const selectedChannels = channelsButtons.filter(
+    const selectedActiveChannels = channelsButtons.filter(
       (button) => button.isActive
     );
 
@@ -189,9 +169,9 @@ function App() {
       return;
     }
 
-    if (selectedChannels.length === 0) {
+    if (selectedActiveChannels.length === 0) {
       message.error(
-        "Please select at least one channel (A, B, C, D, Ho, I, N, Lo) to proceed."
+        "Please select at least one channel (A, B, C, D, Ho, I, N, Lo, etc.) to proceed."
       );
       return;
     }
@@ -207,42 +187,63 @@ function App() {
       return;
     }
 
-    // --- Final validation and syntax type determination using VALID_FINAL_INPUT_REGEX ---
-    let syntaxType = "";
-    // Extract the digit part to determine 2D or 3D
-    const digitsPart = input.replace(/[X>]/, "");
+    // New validations for server, server time, and currency
+    if (!selectedServer || !selectedServerTime || !selectedCurrency) {
+      message.error("Please select Server, Server Time, and Currency.");
+      return;
+    }
+
+    // Determine syntax type (2D or 3D)
+    let syntaxType: "2D" | "3D" = "2D"; // Default to 2D
+    const digitsPart = input.replace(/[X>]/, ""); // Remove X or > to get just the digits
     if (digitsPart.length === 2) {
       syntaxType = "2D";
     } else if (digitsPart.length === 3) {
       syntaxType = "3D";
     }
 
-    // --- END Final validation ---
-
+    // Calculate total amount based on active channels' multipliers
     let calculatedTotalAmount = 0;
-    selectedChannels.forEach((channel) => {
-      calculatedTotalAmount += parsedAmount * channel.multiplier;
+    selectedActiveChannels.forEach((channel) => {
+      // Use the correct multiplier based on syntaxType
+      const multiplier = channel.multipliers[syntaxType];
+      calculatedTotalAmount += parsedAmount * multiplier;
     });
 
-    const selectedChannelIdsArray = selectedChannels.map((button) => button.id);
+    const selectedChannelIdsArray = selectedActiveChannels.map(
+      (button) => button.label
+    );
 
+    // Add the new entry to the table data
     setEnteredNumbers((prevNumbers) => [
       ...prevNumbers,
       {
-        key: prevNumbers.length,
+        key: prevNumbers.length, // Unique key for table row
         value: input,
         channels: selectedChannelIdsArray,
         amount: parsedAmount.toFixed(2),
         totalAmount: calculatedTotalAmount.toFixed(2),
-        syntaxType: syntaxType, // Store the determined syntax type
+        syntaxType: syntaxType,
+        currency: selectedCurrency, // Store the selected currency
       },
     ]);
 
-    setInput("");
-    setAmountInput("");
+    // Reset input fields and button states after successful entry
+    // setInput("");
+    // setAmountInput("");
+    // setChannelsButtons((prev) =>
+    //   prev.map((btn) => ({ ...btn, isActive: false }))
+    // );
+    // setPButtons((prev) => prev.map((btn) => ({ ...btn, isActive: false })));
   };
 
+  /**
+   * Handles clicks on channel buttons (A, B, C, D, Ho, I, N, Lo).
+   * Toggles their active state and handles conflicts (e.g., Lo conflicts with A, B, C, D).
+   * Deactivates all P buttons when a channel button is clicked.
+   */
   const handleChannelButtonClick = (clickedId: string) => {
+    // Deactivate all P buttons when a channel button is clicked
     setPButtons((prevPButtons) =>
       prevPButtons.map((button) => ({ ...button, isActive: false }))
     );
@@ -252,16 +253,19 @@ function App() {
         (button) => button.id === clickedId
       );
 
-      if (!clickedButton) return prevChannelsButtons;
+      if (!clickedButton) return prevChannelsButtons; // Should not happen
 
+      // If the clicked button is already active, deactivate it
       if (clickedButton.isActive) {
         return prevChannelsButtons.map((button) =>
           button.id === clickedId ? { ...button, isActive: false } : button
         );
       }
 
+      // Determine which buttons conflict with the clicked button
       const conflictsToDeactivate = clickedButton.conflictsWith || [];
 
+      // Update button states: activate clicked, deactivate conflicts
       return prevChannelsButtons.map((button) => {
         if (button.id === clickedId) {
           return { ...button, isActive: true };
@@ -273,14 +277,20 @@ function App() {
     });
   };
 
+  /**
+   * Handles clicks on P buttons (4P, 5P, 6P, 7P).
+   * Activates the clicked P button and deactivates others.
+   * Automatically activates associated channel buttons.
+   */
   const handlePButtonClick = (clickedId: string) => {
     setPButtons((prevPButtons) => {
       const clickedPButton = prevPButtons.find(
         (button) => button.id === clickedId
       );
 
-      if (!clickedPButton) return prevPButtons;
+      if (!clickedPButton) return prevPButtons; // Should not happen
 
+      // If the clicked P button is already active, deactivate it and all channels
       if (clickedPButton.isActive) {
         setChannelsButtons((prevChannels) =>
           prevChannels.map((channel) => ({ ...channel, isActive: false }))
@@ -288,11 +298,13 @@ function App() {
         return prevPButtons.map((button) => ({ ...button, isActive: false }));
       }
 
+      // Activate the clicked P button and deactivate others
       const updatedPButtons = prevPButtons.map((button) => ({
         ...button,
         isActive: button.id === clickedId,
       }));
 
+      // Activate channels associated with the clicked P button
       const channelsToActivate = clickedPButton.channelsToActivate;
       setChannelsButtons((prevChannels) =>
         prevChannels.map((channel) => ({
@@ -305,170 +317,120 @@ function App() {
     });
   };
 
+  /**
+   * Handles server selection change. Resets server time.
+   */
+  const handleServerChange = (value: string) => {
+    setSelectedServer(value);
+    setSelectedServerTime(undefined); // Reset server time when server changes
+  };
+
+  /**
+   * Handles server time selection change.
+   */
+  const handleServerTimeChange = (value: string) => {
+    setSelectedServerTime(value);
+  };
+
+  /**
+   * Handles currency selection change.
+   */
+  const handleCurrencyChange = (value: string) => {
+    setSelectedCurrency(value);
+  };
+
+  // Column definitions for the Ant Design Table
   const columns: ColumnsType<EnteredNumber> = [
     {
       title: "No.",
       dataIndex: "key",
       key: "key",
       render: (text, record, index) => index + 1,
-      width: "6%", // Adjusted width
+      width: "5%",
     },
     {
       title: "Entered Number",
       dataIndex: "value",
       key: "value",
-      width: "20%", // Adjusted width
+      width: "18%",
     },
     {
-      title: "Syntax", // New column for Syntax Type
+      title: "Syntax",
       dataIndex: "syntaxType",
       key: "syntaxType",
+      width: "9%",
+    },
+    {
+      title: "Currency",
+      dataIndex: "currency",
+      key: "currency",
       width: "10%",
     },
     {
       title: "Amount",
       dataIndex: "amount",
       key: "amount",
-      width: "12%", // Adjusted width
+      width: "10%",
     },
     {
       title: "Channels",
       dataIndex: "channels",
       key: "channels",
-      width: "27%", // Adjusted width
+      width: "23%",
       render: (channels) => channels.join(", "),
     },
     {
       title: "Total Amount",
       dataIndex: "totalAmount",
       key: "totalAmount",
-      width: "25%", // Adjusted width
+      width: "25%",
     },
   ];
 
+  // Dynamically get available server times based on selected server
+  const availableServerTimes = selectedServer
+    ? servers.find((s) => s.id === selectedServer)?.times || []
+    : [];
+
   return (
     <AntApp>
-      {" "}
-      {/* Wrap the entire App with AntApp */}
       <div className="container">
         <Row gutter={[20, 20]} style={{ width: "100%" }}>
-          <Col span={12}>
+          {/* Left Column: Calculator and Input */}
+          <Col span={10}>
             <Row gutter={[10, 10]}>
-              <Col span={14}>
-                <div className="calculator">
-                  <div className="display">
-                    <div className="result">{input || "_"}</div>
-                  </div>
-                  <Row gutter={[10, 10]} className="input-grid">
-                    <Col span={8}>
-                      <Button
-                        onClick={() => handleNumberClick("7")}
-                        className="antd-calc-button"
-                      >
-                        7
-                      </Button>
-                    </Col>
-                    <Col span={8}>
-                      <Button
-                        onClick={() => handleNumberClick("8")}
-                        className="antd-calc-button"
-                      >
-                        8
-                      </Button>
-                    </Col>
-                    <Col span={8}>
-                      <Button
-                        onClick={() => handleNumberClick("9")}
-                        className="antd-calc-button"
-                      >
-                        9
-                      </Button>
-                    </Col>
-                    <Col span={8}>
-                      <Button
-                        onClick={() => handleNumberClick("4")}
-                        className="antd-calc-button"
-                      >
-                        4
-                      </Button>
-                    </Col>
-                    <Col span={8}>
-                      <Button
-                        onClick={() => handleNumberClick("5")}
-                        className="antd-calc-button"
-                      >
-                        5
-                      </Button>
-                    </Col>
-                    <Col span={8}>
-                      <Button
-                        onClick={() => handleNumberClick("6")}
-                        className="antd-calc-button"
-                      >
-                        6
-                      </Button>
-                    </Col>
-                    <Col span={8}>
-                      <Button
-                        onClick={() => handleNumberClick("1")}
-                        className="antd-calc-button"
-                      >
-                        1
-                      </Button>
-                    </Col>
-                    <Col span={8}>
-                      <Button
-                        onClick={() => handleNumberClick("2")}
-                        className="antd-calc-button"
-                      >
-                        2
-                      </Button>
-                    </Col>
-                    <Col span={8}>
-                      <Button
-                        onClick={() => handleNumberClick("3")}
-                        className="antd-calc-button"
-                      >
-                        3
-                      </Button>
-                    </Col>
-                    <Col span={8}>
-                      <Button
-                        onClick={() => handleNumberClick("X")}
-                        className="antd-calc-button"
-                      >
-                        X
-                      </Button>
-                    </Col>
-                    <Col span={8}>
-                      <Button
-                        onClick={() => handleNumberClick("0")}
-                        className="antd-calc-button"
-                      >
-                        0
-                      </Button>
-                    </Col>
-                    <Col span={8}>
-                      <Button
-                        onClick={() => handleNumberClick(">")}
-                        className="antd-calc-button"
-                      >
-                        &gt;
-                      </Button>
-                    </Col>
-                    <Col span={24}>
-                      <Button
-                        onClick={() => handleNumberClick("C")} // Clear button
-                        className="antd-calc-button antd-calc-button-clear"
-                        block
-                      >
-                        Clear
-                      </Button>
-                    </Col>
-                  </Row>
-                </div>
-              </Col>
+              {/* Right Column within Left Section: Server, Time, Channels, P-Buttons, Amount, Currency */}
               <Col span={10}>
+                {/* Server and Server Time Selectors */}
+                <div style={{ marginBottom: "15px" }}>
+                  <Select
+                    placeholder="Select Server"
+                    style={{ width: "100%", marginBottom: "10px" }}
+                    onChange={handleServerChange}
+                    value={selectedServer}
+                  >
+                    {servers.map((server) => (
+                      <Option key={server.id} value={server.id}>
+                        {server.label}
+                      </Option>
+                    ))}
+                  </Select>
+                  <Select
+                    placeholder="Select Server Time"
+                    style={{ width: "100%" }}
+                    onChange={handleServerTimeChange}
+                    value={selectedServerTime}
+                    disabled={!selectedServer}
+                  >
+                    {availableServerTimes.map((time) => (
+                      <Option key={time.id} value={time.id}>
+                        {time.label}
+                      </Option>
+                    ))}
+                  </Select>
+                </div>
+
+                {/* Channel and P Buttons Container */}
                 <div className="middle-controls-container">
                   <div className="middle-controls-left-column">
                     {channelsButtons.map((button) => (
@@ -478,8 +440,10 @@ function App() {
                         className={`middle-control-button ${
                           button.isActive ? "active" : ""
                         }`}
+                        disabled={!selectedServerTime}
                       >
-                        {button.label}
+                        {button.label} ({button.multipliers["2D"]},{" "}
+                        {button.multipliers["3D"]})
                       </Button>
                     ))}
                   </div>
@@ -492,36 +456,71 @@ function App() {
                         className={`middle-control-button p-button ${
                           button.isActive ? "active" : ""
                         }`}
+                        disabled={!selectedServerTime}
                       >
                         {button.label}
                       </Button>
                     ))}
                   </div>
                 </div>
+
+                {/* Amount Input and Currency Selector */}
+              </Col>
+              <Col span={14}>
+                {/* Use the new CalculatorPad component here */}
+                <CalculatorPad
+                  input={input}
+                  onInputChange={handleCalculatorInputChange}
+                />
                 <div style={{ marginTop: "15px" }}>
-                  <Input
-                    placeholder="Enter Amount"
-                    value={amountInput}
-                    onChange={handleAmountInputChange}
-                    onBlur={handleAmountInputBlur}
-                    style={{ width: "100%", height: "40px" }}
-                  />
+                  <Row>
+                    <Col span={19}>
+                      <Input
+                        placeholder="Enter Amount"
+                        value={amountInput}
+                        onChange={handleAmountInputChange}
+                        onBlur={handleAmountInputBlur}
+                        style={{
+                          width: "100%",
+                        }}
+                        disabled={!selectedServerTime}
+                      />
+                    </Col>
+                    <Col span={5}>
+                      <Select
+                        placeholder="Select Currency"
+                        style={{
+                          width: "100%",
+                          marginLeft: "5px",
+                        }}
+                        onChange={handleCurrencyChange}
+                        value={selectedCurrency}
+                      >
+                        <Option value="USD">USD</Option>
+                        <Option value="KHR">KHR</Option>
+                      </Select>
+                    </Col>
+                  </Row>
                 </div>
               </Col>
             </Row>
+            {/* Enter Button */}
             <Row style={{ marginTop: "15px" }}>
               <Col span={24}>
                 <Button
                   onClick={handleEnterClick}
-                  className="antd-calc-button antd-calc-button-enter"
+                  className="antd-calc-button-enter"
                   block
+                  disabled={!selectedServerTime}
                 >
                   Enter
                 </Button>
               </Col>
             </Row>
           </Col>
-          <Col span={12}>
+
+          {/* Right Column: Entered Data Table */}
+          <Col span={14}>
             <div className="entered-numbers-table">
               <h2>Entered Data</h2>
               <Table
@@ -529,7 +528,7 @@ function App() {
                 columns={columns}
                 pagination={false}
                 size="small"
-                scroll={{ y: 200 }}
+                scroll={{ y: 550 }}
               />
             </div>
           </Col>

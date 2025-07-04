@@ -1,0 +1,338 @@
+[
+  {
+    "id": "VN",
+    "label": "Vietnam",
+    "times": [
+      {
+        "id": "VN430",
+        "label": "4:30 PM",
+        "channels": [
+          {
+            "id": "A",
+            "label": "A",
+            "isActive": false,
+            "conflictsWith": ["Lo"],
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "B",
+            "label": "B",
+            "isActive": false,
+            "conflictsWith": ["Lo"],
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "C",
+            "label": "C",
+            "isActive": false,
+            "conflictsWith": ["Lo"],
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "D",
+            "label": "D",
+            "isActive": false,
+            "conflictsWith": ["Lo"],
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "Ho",
+            "label": "Ho",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "I",
+            "label": "I",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "N",
+            "label": "N",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "Lo",
+            "label": "Lo",
+            "isActive": false,
+            "conflictsWith": ["A", "B", "C", "D"],
+            "multipliers": { "2D": 19, "3D": 23 }
+          }
+        ],
+        "pButtons": [
+          {
+            "id": "4P",
+            "label": "4P",
+            "isActive": false,
+            "channelsToActivate": ["A", "B", "C", "D"]
+          },
+          {
+            "id": "5P",
+            "label": "5P",
+            "isActive": false,
+            "channelsToActivate": ["A", "B", "C", "D", "Ho"]
+          },
+          {
+            "id": "6P",
+            "label": "6P",
+            "isActive": false,
+            "channelsToActivate": ["A", "B", "C", "D", "Ho", "I"]
+          },
+          {
+            "id": "7P",
+            "label": "7P",
+            "isActive": false,
+            "channelsToActivate": ["A", "B", "C", "D", "Ho", "I", "N"]
+          }
+        ]
+      },
+      {
+        "id": "VN630",
+        "label": "6:30 PM",
+        "channels": [
+          {
+            "id": "A",
+            "label": "A",
+            "isActive": false,
+            "conflictsWith": ["Lo"],
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "B",
+            "label": "B",
+            "isActive": false,
+            "conflictsWith": ["Lo"],
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "C",
+            "label": "C",
+            "isActive": false,
+            "conflictsWith": ["Lo"],
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "D",
+            "label": "D",
+            "isActive": false,
+            "conflictsWith": ["Lo"],
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "Lo",
+            "label": "Lo",
+            "isActive": false,
+            "conflictsWith": ["A", "B", "C", "D"],
+            "multipliers": { "2D": 32, "3D": 25 }
+          }
+        ],
+        "pButtons": [
+          {
+            "id": "4P",
+            "label": "4P",
+            "isActive": false,
+            "channelsToActivate": ["A", "B", "C", "D"]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "KH",
+    "label": "Cambodia",
+    "times": [
+      {
+        "id": "KH11AM",
+        "label": "11:00 AM",
+        "channels": [
+          {
+            "id": "A",
+            "label": "A",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "B",
+            "label": "B",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "C",
+            "label": "C",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "D",
+            "label": "D",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          }
+        ],
+        "pButtons": [
+          {
+            "id": "4P",
+            "label": "4P",
+            "isActive": false,
+            "channelsToActivate": ["A", "B", "C", "D"]
+          }
+        ]
+      },
+      {
+        "id": "KH1PM",
+        "label": "1:00 PM",
+        "channels": [
+          {
+            "id": "A",
+            "label": "A",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "B",
+            "label": "B",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "C",
+            "label": "C",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "D",
+            "label": "D",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          }
+        ],
+        "pButtons": [
+          {
+            "id": "4P",
+            "label": "4P",
+            "isActive": false,
+            "channelsToActivate": ["A", "B", "C", "D"]
+          }
+        ]
+      },
+      {
+        "id": "KH3PM",
+        "label": "3:00 PM",
+        "channels": [
+          {
+            "id": "A",
+            "label": "A",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "B",
+            "label": "B",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "C",
+            "label": "C",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "D",
+            "label": "D",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          }
+        ],
+        "pButtons": [
+          {
+            "id": "4P",
+            "label": "4P",
+            "isActive": false,
+            "channelsToActivate": ["A", "B", "C", "D"]
+          }
+        ]
+      },
+      {
+        "id": "KH5PM",
+        "label": "5:00 PM",
+        "channels": [
+          {
+            "id": "A",
+            "label": "A",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "B",
+            "label": "B",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "C",
+            "label": "C",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "D",
+            "label": "D",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          }
+        ],
+        "pButtons": [
+          {
+            "id": "4P",
+            "label": "4P",
+            "isActive": false,
+            "channelsToActivate": ["A", "B", "C", "D"]
+          }
+        ]
+      },
+      {
+        "id": "KH8PM",
+        "label": "8:00 PM",
+        "channels": [
+          {
+            "id": "A",
+            "label": "A",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "B",
+            "label": "B",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "C",
+            "label": "C",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          },
+          {
+            "id": "D",
+            "label": "D",
+            "isActive": false,
+            "multipliers": { "2D": 1, "3D": 1 }
+          }
+        ],
+        "pButtons": [
+          {
+            "id": "4P",
+            "label": "4P",
+            "isActive": false,
+            "channelsToActivate": ["A", "B", "C", "D"]
+          }
+        ]
+      }
+    ]
+  }
+]

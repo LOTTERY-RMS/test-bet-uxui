@@ -5,9 +5,9 @@ import App from "./App.tsx";
 import { App as AntApp } from "antd";
 
 createRoot(document.getElementById("root")!).render(
-  // <StrictMode>
-  <AntApp>
-    <App />
-  </AntApp>
-  // </StrictMode>
+  <StrictMode>
+    <AntApp>
+      <App />
+    </AntApp>
+  </StrictMode>
 );

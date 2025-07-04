@@ -36,7 +36,7 @@ interface PButton {
 
 interface EnteredNumber {
   key: number;
-  value: string;
+  value: string; // e.g., "51X", "123" - This will now contain the original input string
   channels: string[]; // This will still store channel IDs
   displayChannels: string[]; // New: to store pre-formatted channel strings for display
   amount: string;
@@ -44,6 +44,8 @@ interface EnteredNumber {
   syntaxType: "2D" | "3D"; // Ensure this is strictly typed
   currency: string;
   totalMultiplier: number; // Added to store the calculated total multiplier
+  numberOfCombinations: number; // New: To store the count of combinations
+  combinedNumbers: string[];
 }
 
 interface ServerTime {
@@ -61,6 +63,48 @@ interface Server {
 
 // Regex for valid FINAL input patterns (used in handleEnterClick)
 const VALID_FINAL_INPUT_REGEX = /^(\d{2}|\d{3})[X>]?$/;
+
+/**
+ * Helper function to generate permutations for two digits.
+ * For "12", returns ["12", "21"]. For "11", returns ["11"].
+ * @param numStr The two-digit number string.
+ * @returns An array of unique permutations.
+ */
+const getTwoDigitPermutations = (numStr: string): string[] => {
+  if (numStr.length !== 2) return [numStr];
+  const [d1, d2] = numStr.split("");
+  if (d1 === d2) return [numStr]; // No distinct permutations for '11'
+  return [numStr, d2 + d1];
+};
+
+/**
+ * Helper function to generate permutations for three digits.
+ * For "123", returns ["123", "132", "213", "231", "312", "321"].
+ * Handles duplicate digits correctly (e.g., "112" returns "112", "121", "211").
+ * @param numStr The three-digit number string.
+ * @returns An array of unique permutations.
+ */
+const getThreeDigitPermutations = (numStr: string): string[] => {
+  if (numStr.length !== 3) return [numStr];
+  const chars = numStr.split("");
+  const result: string[] = [];
+
+  const permute = (arr: string[], memo: string[] = []) => {
+    let cur;
+    const memoized = memo;
+    for (let i = 0; i < arr.length; i++) {
+      cur = arr.splice(i, 1);
+      if (arr.length === 0) {
+        result.push(memoized.concat(cur).join(""));
+      }
+      permute(arr.slice(), memoized.concat(cur));
+      arr.splice(i, 0, cur[0]);
+    }
+    return result;
+  };
+  // Use a Set to store unique permutations
+  return Array.from(new Set(permute(chars)));
+};
 
 function App() {
   const [input, setInput] = useState<string>(""); // State for calculator display
@@ -204,13 +248,24 @@ function App() {
       return;
     }
 
-    // Determine syntax type (2D or 3D)
-    let syntaxType: "2D" | "3D" = "2D"; // Default to 2D
+    // Determine syntax type (2D or 3D) and combinations
+    let syntaxType: "2D" | "3D";
     const digitsPart = input.replace(/[X>]/, ""); // Remove X or > to get just the digits
+    let combinedNumbers: string[] = []; // Default to 1
+
     if (digitsPart.length === 2) {
       syntaxType = "2D";
+      if (input.endsWith("X")) {
+        combinedNumbers = getTwoDigitPermutations(digitsPart);
+      }
     } else if (digitsPart.length === 3) {
       syntaxType = "3D";
+      if (input.endsWith("X")) {
+        combinedNumbers = getThreeDigitPermutations(digitsPart);
+      }
+    } else {
+      message.error("Invalid number format based on digit count.");
+      return;
     }
 
     // Calculate total multiplier first
@@ -226,8 +281,11 @@ function App() {
       );
     });
 
+    const numberOfCombinations = combinedNumbers.length;
+
     // Calculate total amount using the summed multiplier
-    const calculatedTotalAmount = parsedAmount * totalMultiplier;
+    const calculatedTotalAmount =
+      parsedAmount * totalMultiplier * numberOfCombinations;
 
     // Store channel IDs in the enteredNumbers state for easier lookup later
     const selectedChannelIdsArray = selectedActiveChannels.map(
@@ -239,7 +297,7 @@ function App() {
       ...prevNumbers,
       {
         key: prevNumbers.length, // Unique key for table row
-        value: input,
+        value: input, // Store the original input string
         channels: selectedChannelIdsArray, // Store channel IDs
         displayChannels: displayChannelsArray, // Store the pre-formatted display string
         amount: parsedAmount.toFixed(2),
@@ -247,6 +305,8 @@ function App() {
         syntaxType: syntaxType,
         currency: selectedCurrency, // Store the selected currency
         totalMultiplier: totalMultiplier, // Store the calculated total multiplier
+        numberOfCombinations: numberOfCombinations,
+        combinedNumbers: combinedNumbers, // Store the number of combinations
       },
     ]);
 
@@ -372,9 +432,30 @@ function App() {
     },
     {
       title: "Entered Number",
-      dataIndex: "value",
       key: "value",
       width: "18%",
+      render: (text, record) => {
+        // Only show tooltip if there are combinations (i.e., 'X' was used)
+        if (record.numberOfCombinations > 1) {
+          // Calculate combined numbers on demand for the tooltip
+
+          return (
+            <Tooltip
+              title={
+                <div style={{ whiteSpace: "pre-line" }}>
+                  {record.combinedNumbers.join(", ")}
+                </div>
+              }
+            >
+              <span>{record.value} </span>
+              <span style={{ color: "#1890ff" }}>
+                ({record.numberOfCombinations})
+              </span>
+            </Tooltip>
+          );
+        }
+        return <span>{record.value}</span>;
+      },
     },
     {
       title: "Syntax",
@@ -401,7 +482,6 @@ function App() {
       width: "23%",
       render: (channelIds: string[], record) => {
         // Map channel IDs to their labels for display in the cell
-        // This part is simplified as displayChannels is already prepared
         const channelLabels = channelIds
           .map((channelId) => {
             // Find the actual channel label from the current channelsButtons state
@@ -410,37 +490,32 @@ function App() {
           })
           .join(", ");
 
-        // Use Tooltip to show the full displayChannels
+        // Use Tooltip to show the full displayChannels, now wrapping the labels directly
         return (
-          <div>
-            <span>{channelLabels}</span>
-            <Tooltip
-              title={
-                <div style={{ whiteSpace: "pre-line" }}>
-                  {record.displayChannels.join("\n")}
-                </div>
-              }
-            >
-              <span
-                style={{
-                  cursor: "pointer",
-                  color: "#1890ff",
-                  fontWeight: "bold",
-                  paddingLeft: "5px",
-                }}
-              >
-                (?)
-              </span>
-            </Tooltip>
-          </div>
+          <Tooltip
+            title={
+              <div style={{ whiteSpace: "pre-line" }}>
+                {record.displayChannels.join("\n")}
+              </div>
+            }
+          >
+            <span>{channelLabels} </span>
+            {/* Add the total multiplier in blue and wrap it in the tooltip */}
+            <span style={{ color: "#1890ff" }}>({record.totalMultiplier})</span>
+          </Tooltip>
         );
       },
     },
     {
       title: "Multiplier", // New Multiplier column
-      dataIndex: "totalMultiplier", // Now directly use the stored totalMultiplier
+      dataIndex: "totalMultiplier",
       key: "totalMultiplier",
       width: "10%",
+      render: (text, record) => {
+        return record.numberOfCombinations > 1
+          ? `${record.numberOfCombinations} x ${record.totalMultiplier}`
+          : record.totalMultiplier;
+      },
     },
     {
       title: "Total Amount",

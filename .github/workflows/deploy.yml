@@ -3,13 +3,13 @@ name: Deploy React Vite App to GitHub Pages
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main # This workflow runs when changes are pushed to the 'main' branch
+  workflow_dispatch: # Allows you to manually trigger the workflow from the GitHub Actions tab
 
 permissions:
   contents: read
   pages: write
-  id-token: write
+  id-token: write # Required by actions/deploy-pages
 
 concurrency:
   group: "pages"
@@ -22,51 +22,48 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --- ADD THIS DEBUG STEP ---
-      - name: List files in repository root
-        run: |
-          echo "Current working directory:"
-          pwd
-          echo "Contents of current directory:"
-          ls -F
-          echo "GITHUB_WORKSPACE environment variable:"
-          echo "$GITHUB_WORKSPACE"
-      # --- END DEBUG STEP ---
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 20 # Use your preferred Node.js version (e.g., 18, 20)
 
+      # Install pnpm itself
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v3
         with:
-          version: 8
-          run_install: false
+          version: 10.12.4 # Specify pnpm version. Leave blank for latest, or use a specific one like '8' or '8.15.5'
+          run_install: false # We will run 'pnpm install --frozen-lockfile' explicitly next
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile # Installs dependencies based on pnpm-lock.yaml
 
       - name: Build project
-        run: pnpm run build
+        run: pnpm run build # Runs the build script defined in your package.json
 
+      # This step is crucial for Single Page Applications (SPAs) on GitHub Pages.
+      # It copies index.html to 404.html to ensure client-side routing works
+      # when users directly access sub-paths (e.g., /about).
       - name: Copy index.html to 404.html for SPA routing
         run: cp dist/index.html dist/404.html
 
+      # Configures the GitHub Pages environment
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # Uploads your production-ready build artifacts (the 'dist' folder)
       - name: Upload production-ready build files
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./dist"
+          path: "./dist" # The directory where Vite outputs your built files
 
   deploy:
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      name: github-pages # Special environment for GitHub Pages
+      url: ${{ steps.deployment.outputs.page_url }} # The URL of the deployed site
     runs-on: ubuntu-latest
-    needs: build
+    needs: build # This job will only run after the 'build' job completes successfully
     steps:
+      # Deploys the uploaded artifact to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

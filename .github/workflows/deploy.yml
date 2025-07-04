@@ -25,15 +25,19 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20 # Or your preferred Node.js version
-          cache: "pnpm" # <--- CHANGE THIS to 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml # <--- ADD THIS LINE
+          node-version: 20
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+
+      # --- ADD THIS STEP ---
+      - name: Install pnpm
+        run: npm install -g pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile # <--- CHANGE THIS to pnpm command
+        run: pnpm install --frozen-lockfile
 
       - name: Build project
-        run: pnpm run build # <--- Optional: If your build script is just 'build', this works. If it's a different script, adjust accordingly.
+        run: pnpm run build
 
       - name: Copy index.html to 404.html for SPA routing
         run: cp dist/index.html dist/404.html

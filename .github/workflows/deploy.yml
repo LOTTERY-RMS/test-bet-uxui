@@ -3,8 +3,8 @@ name: Deploy React Vite App to GitHub Pages
 on:
   push:
     branches:
-      - main # This workflow runs when changes are pushed to the 'main' branch
-  workflow_dispatch: # Allows you to manually trigger the workflow from the GitHub Actions tab
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -26,18 +26,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20 # Or your preferred Node.js version
-          cache: "npm" # Caches node modules for faster builds
+          cache: "pnpm" # <--- CHANGE THIS to 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml # <--- ADD THIS LINE
 
       - name: Install dependencies
-        run: npm ci # Use npm ci for clean installs in CI environments
+        run: pnpm install --frozen-lockfile # <--- CHANGE THIS to pnpm command
 
       - name: Build project
-        run: npm run build
+        run: pnpm run build # <--- Optional: If your build script is just 'build', this works. If it's a different script, adjust accordingly.
 
-      # Optional: Handle SPA routing for GitHub Pages 404s
-      # If your app uses client-side routing (e.g., React Router), GitHub Pages
-      # might return a 404 for direct links to sub-paths. This copies index.html to 404.html
-      # to ensure all paths resolve to your SPA.
       - name: Copy index.html to 404.html for SPA routing
         run: cp dist/index.html dist/404.html
 
@@ -47,14 +44,14 @@ jobs:
       - name: Upload production-ready build files
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./dist" # The directory where Vite outputs your build
+          path: "./dist"
 
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build # This job depends on the 'build' job completing successfully
+    needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

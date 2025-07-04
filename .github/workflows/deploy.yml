@@ -22,25 +22,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # --- ADD THIS DEBUG STEP ---
+      - name: List files in repository root
+        run: |
+          echo "Current working directory:"
+          pwd
+          echo "Contents of current directory:"
+          ls -F
+          echo "GITHUB_WORKSPACE environment variable:"
+          echo "$GITHUB_WORKSPACE"
+      # --- END DEBUG STEP ---
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          # --- REMOVE THESE TWO LINES FROM HERE ---
-          # cache: 'pnpm'
-          # cache-dependency-path: pnpm-lock.yaml
 
-      # This step will now correctly install pnpm and handle its caching
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 8 # Or a specific version like '8.15.5', or leave blank for latest stable
-          run_install: false # We will run 'pnpm install --frozen-lockfile' ourselves next
-          # --- ADD pnpm caching options here ---
-          # pnpm/action-setup handles its own caching for the pnpm store and dependencies
-          # by default when it installs pnpm, it links to the cache directory.
-          # You usually don't need to explicitly configure `cache` here for pnpm/action-setup.
-          # However, if you wanted to pass a custom cache key, you'd do it here.
+          version: 8
+          run_install: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

@@ -97,7 +97,7 @@
             "label": "A",
             "isActive": false,
             "conflictsWith": ["Lo"],
-            "multipliers": { "2D": 1, "3D": 1 }
+            "multipliers": { "2D": 4, "3D": 3 }
           },
           {
             "id": "B",

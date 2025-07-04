@@ -1,5 +1,14 @@
 import { useCallback, useState, useEffect } from "react";
-import { Button, Row, Col, Table, Input, App as AntApp, Select } from "antd";
+import {
+  Button,
+  Row,
+  Col,
+  Table,
+  Input,
+  App as AntApp,
+  Select,
+  Tooltip,
+} from "antd"; // Import Tooltip
 import type { ColumnsType } from "antd/es/table";
 import "antd/dist/reset.css";
 import "./App.css"; // Global styles
@@ -28,7 +37,8 @@ interface PButton {
 interface EnteredNumber {
   key: number;
   value: string;
-  channels: string[]; // This will now store channel IDs to allow multiplier lookup
+  channels: string[]; // This will still store channel IDs
+  displayChannels: string[]; // New: to store pre-formatted channel strings for display
   amount: string;
   totalAmount: string;
   syntaxType: "2D" | "3D"; // Ensure this is strictly typed
@@ -205,8 +215,15 @@ function App() {
 
     // Calculate total multiplier first
     let totalMultiplier = 0;
+    const displayChannelsArray: string[] = []; // Array to store formatted channel strings
+
     selectedActiveChannels.forEach((channel) => {
-      totalMultiplier += channel.multipliers[syntaxType];
+      const multiplier = channel.multipliers[syntaxType];
+      totalMultiplier += multiplier;
+      // Store the full formatted string for tooltip, and just the label for main display
+      displayChannelsArray.push(
+        `${channel.label} (${syntaxType}x${multiplier})`
+      );
     });
 
     // Calculate total amount using the summed multiplier
@@ -224,6 +241,7 @@ function App() {
         key: prevNumbers.length, // Unique key for table row
         value: input,
         channels: selectedChannelIdsArray, // Store channel IDs
+        displayChannels: displayChannelsArray, // Store the pre-formatted display string
         amount: parsedAmount.toFixed(2),
         totalAmount: calculatedTotalAmount.toFixed(2),
         syntaxType: syntaxType,
@@ -378,29 +396,44 @@ function App() {
     },
     {
       title: "Channels",
-      dataIndex: "channels",
+      dataIndex: "channels", // Keep dataIndex as 'channels' (IDs)
       key: "channels",
       width: "23%",
       render: (channelIds: string[], record) => {
-        // Find the current server and time to get the correct channel definitions
-        const currentServer = servers.find((s) => s.id === selectedServer);
-        const currentServerTimeData = currentServer?.times.find(
-          (t) => t.id === selectedServerTime
-        );
-        return channelIds
+        // Map channel IDs to their labels for display in the cell
+        // This part is simplified as displayChannels is already prepared
+        const channelLabels = channelIds
           .map((channelId) => {
-            const channel = currentServerTimeData?.channels.find(
-              (c) => c.id === channelId
-            );
-            if (channel) {
-              // Display only the multiplier relevant to the row's syntaxType
-              return `${channel.label} (${
-                channel.multipliers[record.syntaxType]
-              })`;
-            }
-            return channelId; // Fallback if channel data not found
+            // Find the actual channel label from the current channelsButtons state
+            const channel = channelsButtons.find((c) => c.id === channelId);
+            return channel ? channel.label : channelId;
           })
           .join(", ");
+
+        // Use Tooltip to show the full displayChannels
+        return (
+          <div>
+            <span>{channelLabels}</span>
+            <Tooltip
+              title={
+                <div style={{ whiteSpace: "pre-line" }}>
+                  {record.displayChannels.join("\n")}
+                </div>
+              }
+            >
+              <span
+                style={{
+                  cursor: "pointer",
+                  color: "#1890ff",
+                  fontWeight: "bold",
+                  paddingLeft: "5px",
+                }}
+              >
+                (?)
+              </span>
+            </Tooltip>
+          </div>
+        );
       },
     },
     {
@@ -472,7 +505,7 @@ function App() {
                         }`}
                         disabled={!selectedServerTime}
                       >
-                        {button.label} ({button.multipliers["2D"]},
+                        {button.label} (2Dx{button.multipliers["2D"]}, 3Dx
                         {button.multipliers["3D"]})
                       </Button>
                     ))}

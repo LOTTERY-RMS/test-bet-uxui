@@ -26,15 +26,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "pnpm"
-          cache-dependency-path: pnpm-lock.yaml
+          # --- REMOVE THESE TWO LINES FROM HERE ---
+          # cache: 'pnpm'
+          # cache-dependency-path: pnpm-lock.yaml
 
-      # --- Replace the previous 'Install pnpm' step with this ---
+      # This step will now correctly install pnpm and handle its caching
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 8 # Or a specific version like '8.x.x', or leave blank for latest stable
+          version: 8 # Or a specific version like '8.15.5', or leave blank for latest stable
           run_install: false # We will run 'pnpm install --frozen-lockfile' ourselves next
+          # --- ADD pnpm caching options here ---
+          # pnpm/action-setup handles its own caching for the pnpm store and dependencies
+          # by default when it installs pnpm, it links to the cache directory.
+          # You usually don't need to explicitly configure `cache` here for pnpm/action-setup.
+          # However, if you wanted to pass a custom cache key, you'd do it here.
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

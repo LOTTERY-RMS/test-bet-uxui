@@ -121,12 +121,12 @@ const getTwoDigitRangeCombinations = (digits: string, rangeType: string): string
   const result: string[] = [];
 
   switch (rangeType) {
-    case "Right": // Example: 10> -> 10, 11, ..., 19 (Fix first digit, vary second)
+    case "កន្ទុយ": // Example: 10> -> 10, 11, ..., 19 (Fix first digit, vary second)
       for (let i = d2; i <= 9; i++) {
         result.push(`${d1}${i}`);
       }
       return result;
-    case "Left": // Example: 01> -> 01, 11, ..., 91 (Fix second digit, vary first)
+    case "ក្បាល": // Example: 01> -> 01, 11, ..., 91 (Fix second digit, vary first)
       for (let i = d1; i <= 9; i++) {
         result.push(`${i}${d2}`);
       }
@@ -148,7 +148,7 @@ const getThreeDigitRangeCombinations = (digits: string, rangeType: string): stri
   const d2 = parseInt(digits[1]);
   const d3 = parseInt(digits[2]);
   const result: string[] = [];
-
+  console.log(rangeType, "Range Type");
   switch (rangeType) {
     case "កន្ទុយ": // Fix first two (d1, d2), vary third (d3 to 9)
       for (let i = d3; i <= 9; i++) {

@@ -1,0 +1,253 @@
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f0f2f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.container {
+  display: flex;
+  flex-direction: row; /* Ensure row direction */
+  gap: 20px; /* Space between the three main sections */
+  justify-content: center;
+  align-items: flex-start; /* Align items to the top */
+  flex-wrap: nowrap; /* Prevent wrapping initially */
+  max-width: 2000px; /* Increased max-width to comfortably fit three columns */
+  width: 100%; /* Ensure container fills available width up to max-width */
+}
+
+/* Calculator (Input Pad) - Left Section */
+.calculator {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  flex-basis: 320px; /* Fixed width */
+  flex-grow: 0;
+  flex-shrink: 0;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.display {
+  background-color: #222;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: right;
+  margin-bottom: 10px;
+  min-height: 80px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.result {
+  color: #ffffff;
+  font-size: 2.8em;
+  font-weight: 300;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.input-grid .ant-row {
+  width: 100%;
+}
+
+.input-grid .ant-col {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Styling for all calculator buttons */
+.antd-calc-button.ant-btn {
+  width: 80px;
+  height: 80px;
+  font-size: 1.8em;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.antd-calc-button.ant-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  background-color: #e0e0e0;
+}
+
+.antd-calc-button.ant-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #d0d0d0;
+}
+
+.antd-calc-button-enter.ant-btn {
+  width: 100%;
+  border-radius: 10px;
+  background-color: #4CAF50;
+  color: #ffffff;
+  font-size: 1.5em;
+  height: 60px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.antd-calc-button-enter.ant-btn:hover {
+  background-color: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.antd-calc-button-enter.ant-btn:active {
+  background-color: #3e8e41;
+  transform: translateY(0);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Middle Section: New Toggle Controls */
+.middle-controls-container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 15px; /* Slightly reduced padding to make space for internal columns */
+  flex-basis: 220px; /* Adjust width for the middle controls to fit 2 columns + separator */
+  flex-grow: 0;
+  flex-shrink: 0;
+  min-width: 220px;
+  display: flex;
+  flex-direction: row; /* Arrange internal columns side-by-side */
+  justify-content: space-around; /* Distribute space evenly */
+  align-items: flex-start; /* Align columns to the top */
+  gap: 10px; /* Gap between the left column, separator, and right column */
+}
+
+.middle-controls-left-column,
+.middle-controls-right-column {
+  display: flex;
+  flex-direction: column; /* Stack buttons vertically within each column */
+  gap: 8px; /* Space between buttons in the column */
+  flex-grow: 1; /* Allow columns to grow within the container */
+  flex-basis: 0; /* Base size for flex-grow */
+}
+
+.middle-controls-separator {
+  width: 1px; /* Width of the vertical line */
+  background-color: #e0e0e0; /* Color of the line */
+  margin: 0 5px; /* Small margin around the separator */
+  align-self: stretch; /* Make separator stretch full height of container */
+}
+
+.middle-control-button.ant-btn {
+  width: 100%; /* Make buttons fill available space in their column */
+  height: 40px; /* Consistent height for letter buttons */
+  font-size: 1.1em;
+  border-radius: 8px;
+  border: 1px solid #d9d9d9;
+  color: #333;
+  background-color: #fff;
+  transition: all 0.2s ease-in-out;
+  box-shadow: none;
+  display: flex; /* Ensure button content is centered */
+  justify-content: center;
+  align-items: center;
+}
+
+.middle-control-button.ant-btn:hover {
+  background-color: #f0f2f5;
+  border-color: #a6a6a6;
+  color: #333;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Active state for middle buttons */
+.middle-control-button.ant-btn.active {
+  background-color: #1890ff;
+  border-color: #1890ff;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.middle-control-button.ant-btn.active:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+}
+
+.middle-control-button.ant-btn.active:active {
+  background-color: #096dd9;
+  border-color: #096dd9;
+}
+
+/* Specific styling for the 'P' buttons (spanning 2 rows) */
+.middle-control-button.ant-btn.p-button {
+  height: calc((40px * 2) + 8px); /* Height of two letter buttons + 1 gap */
+  /* If you want to refine this, calculate based on actual button/gap sizes */
+}
+
+/* Table - Right Section */
+.entered-numbers-table {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  flex-basis: 300px;
+  flex-grow: 1;
+  flex-shrink: 1;
+  min-width: 280px;
+  max-height: 450px;
+  overflow-y: auto;
+}
+
+.entered-numbers-table h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 1.5em;
+  text-align: center;
+}
+
+.entered-numbers-table .ant-table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.entered-numbers-table .ant-table-thead > tr > th {
+  background-color: #f0f2f5;
+  color: #555;
+  font-weight: bold;
+  text-align: center !important;
+}
+
+.entered-numbers-table .ant-table-tbody > tr > td {
+  text-align: center;
+}
+
+.entered-numbers-table .ant-table-tbody > tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.entered-numbers-table .ant-table-tbody > tr:hover > td {
+  background-color: #e6f7ff;
+}
+
+.ant-btn-block {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+

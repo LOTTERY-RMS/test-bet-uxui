@@ -28,11 +28,12 @@ interface PButton {
 interface EnteredNumber {
   key: number;
   value: string;
-  channels: string[];
+  channels: string[]; // This will now store channel IDs to allow multiplier lookup
   amount: string;
   totalAmount: string;
-  syntaxType: string; // "2D" or "3D"
+  syntaxType: "2D" | "3D"; // Ensure this is strictly typed
   currency: string;
+  totalMultiplier: number; // Added to store the calculated total multiplier
 }
 
 interface ServerTime {
@@ -202,16 +203,18 @@ function App() {
       syntaxType = "3D";
     }
 
-    // Calculate total amount based on active channels' multipliers
-    let calculatedTotalAmount = 0;
+    // Calculate total multiplier first
+    let totalMultiplier = 0;
     selectedActiveChannels.forEach((channel) => {
-      // Use the correct multiplier based on syntaxType
-      const multiplier = channel.multipliers[syntaxType];
-      calculatedTotalAmount += parsedAmount * multiplier;
+      totalMultiplier += channel.multipliers[syntaxType];
     });
 
+    // Calculate total amount using the summed multiplier
+    const calculatedTotalAmount = parsedAmount * totalMultiplier;
+
+    // Store channel IDs in the enteredNumbers state for easier lookup later
     const selectedChannelIdsArray = selectedActiveChannels.map(
-      (button) => button.label
+      (button) => button.id
     );
 
     // Add the new entry to the table data
@@ -220,15 +223,16 @@ function App() {
       {
         key: prevNumbers.length, // Unique key for table row
         value: input,
-        channels: selectedChannelIdsArray,
+        channels: selectedChannelIdsArray, // Store channel IDs
         amount: parsedAmount.toFixed(2),
         totalAmount: calculatedTotalAmount.toFixed(2),
         syntaxType: syntaxType,
         currency: selectedCurrency, // Store the selected currency
+        totalMultiplier: totalMultiplier, // Store the calculated total multiplier
       },
     ]);
 
-    // Reset input fields and button states after successful entry
+    // // Reset input fields and button states after successful entry
     // setInput("");
     // setAmountInput("");
     // setChannelsButtons((prev) =>
@@ -298,7 +302,7 @@ function App() {
         return prevPButtons.map((button) => ({ ...button, isActive: false }));
       }
 
-      // Activate the clicked P button and deactivate others
+      // Activate the clicked P button and deactivates others
       const updatedPButtons = prevPButtons.map((button) => ({
         ...button,
         isActive: button.id === clickedId,
@@ -377,7 +381,33 @@ function App() {
       dataIndex: "channels",
       key: "channels",
       width: "23%",
-      render: (channels) => channels.join(", "),
+      render: (channelIds: string[], record) => {
+        // Find the current server and time to get the correct channel definitions
+        const currentServer = servers.find((s) => s.id === selectedServer);
+        const currentServerTimeData = currentServer?.times.find(
+          (t) => t.id === selectedServerTime
+        );
+        return channelIds
+          .map((channelId) => {
+            const channel = currentServerTimeData?.channels.find(
+              (c) => c.id === channelId
+            );
+            if (channel) {
+              // Display only the multiplier relevant to the row's syntaxType
+              return `${channel.label} (${
+                channel.multipliers[record.syntaxType]
+              })`;
+            }
+            return channelId; // Fallback if channel data not found
+          })
+          .join(", ");
+      },
+    },
+    {
+      title: "Multiplier", // New Multiplier column
+      dataIndex: "totalMultiplier", // Now directly use the stored totalMultiplier
+      key: "totalMultiplier",
+      width: "10%",
     },
     {
       title: "Total Amount",
@@ -442,7 +472,7 @@ function App() {
                         }`}
                         disabled={!selectedServerTime}
                       >
-                        {button.label} ({button.multipliers["2D"]},{" "}
+                        {button.label} ({button.multipliers["2D"]},
                         {button.multipliers["3D"]})
                       </Button>
                     ))}

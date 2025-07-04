@@ -45,7 +45,7 @@ interface EnteredNumber {
   currency: string;
   totalMultiplier: number; // Added to store the calculated total multiplier
   numberOfCombinations: number; // New: To store the count of combinations
-  combinedNumbers: string[];
+  combinedNumbers: string[]; // Storing combined numbers for tooltip display
 }
 
 interface ServerTime {
@@ -251,17 +251,26 @@ function App() {
     // Determine syntax type (2D or 3D) and combinations
     let syntaxType: "2D" | "3D";
     const digitsPart = input.replace(/[X>]/, ""); // Remove X or > to get just the digits
-    let combinedNumbers: string[] = []; // Default to 1
+    let combinedNumbers: string[] = [];
+    let numberOfCombinations = 1; // Default to 1 for non-X inputs
 
     if (digitsPart.length === 2) {
       syntaxType = "2D";
       if (input.endsWith("X")) {
         combinedNumbers = getTwoDigitPermutations(digitsPart);
+        numberOfCombinations = combinedNumbers.length;
+      } else {
+        combinedNumbers = [digitsPart]; // For "##" or "##>"
+        numberOfCombinations = 1;
       }
     } else if (digitsPart.length === 3) {
       syntaxType = "3D";
       if (input.endsWith("X")) {
         combinedNumbers = getThreeDigitPermutations(digitsPart);
+        numberOfCombinations = combinedNumbers.length;
+      } else {
+        combinedNumbers = [digitsPart]; // For "###" or "###>"
+        numberOfCombinations = 1;
       }
     } else {
       message.error("Invalid number format based on digit count.");
@@ -281,9 +290,7 @@ function App() {
       );
     });
 
-    const numberOfCombinations = combinedNumbers.length;
-
-    // Calculate total amount using the summed multiplier
+    // Calculate total amount using the summed multiplier and number of combinations
     const calculatedTotalAmount =
       parsedAmount * totalMultiplier * numberOfCombinations;
 
@@ -310,7 +317,8 @@ function App() {
       },
     ]);
 
-    // // Reset input fields and button states after successful entry
+    // Optionally, reset input fields and button states after successful entry
+    // Uncomment the following lines if you want to clear the inputs after "Enter"
     // setInput("");
     // setAmountInput("");
     // setChannelsButtons((prev) =>
@@ -437,8 +445,6 @@ function App() {
       render: (text, record) => {
         // Only show tooltip if there are combinations (i.e., 'X' was used)
         if (record.numberOfCombinations > 1) {
-          // Calculate combined numbers on demand for the tooltip
-
           return (
             <Tooltip
               title={

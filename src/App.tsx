@@ -611,14 +611,14 @@ function App() {
       title: "No.",
       dataIndex: "key",
       key: "key",
-      render: (text, record, index) => index + 1,
+      render: (_text, _record, index) => index + 1,
       width: "5%",
     },
     {
       title: "Entered Number",
       key: "value",
       width: "18%",
-      render: (text, record) => {
+      render: (_text, record) => {
         // Determine the display value for the number
         let displayNum = record.value;
         if (record.rangeType) {
@@ -687,7 +687,7 @@ function App() {
       dataIndex: "totalMultiplier",
       key: "totalMultiplier",
       width: "10%",
-      render: (text, record) => {
+      render: (_text, record) => {
         return record.numberOfCombinations > 1 ? `${record.numberOfCombinations} x ${record.totalMultiplier}` : record.totalMultiplier;
       },
     },

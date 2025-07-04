@@ -114,10 +114,7 @@ const getThreeDigitPermutations = (numStr: string): string[] => {
  * @param rangeType The selected range type (e.g., "Right", "Left").
  * @returns An array of combined number strings.
  */
-const getTwoDigitRangeCombinations = (
-  digits: string,
-  rangeType: string
-): string[] => {
+const getTwoDigitRangeCombinations = (digits: string, rangeType: string): string[] => {
   if (digits.length !== 2) return [digits];
   const d1 = parseInt(digits[0]);
   const d2 = parseInt(digits[1]);
@@ -145,10 +142,7 @@ const getTwoDigitRangeCombinations = (
  * @param rangeType The selected range type.
  * @returns An array of combined number strings.
  */
-const getThreeDigitRangeCombinations = (
-  digits: string,
-  rangeType: string
-): string[] => {
+const getThreeDigitRangeCombinations = (digits: string, rangeType: string): string[] => {
   if (digits.length !== 3) return [digits];
   const d1 = parseInt(digits[0]);
   const d2 = parseInt(digits[1]);
@@ -156,36 +150,36 @@ const getThreeDigitRangeCombinations = (
   const result: string[] = [];
 
   switch (rangeType) {
-    case "Right": // Fix first two (d1, d2), vary third (d3 to 9)
+    case "កន្ទុយ": // Fix first two (d1, d2), vary third (d3 to 9)
       for (let i = d3; i <= 9; i++) {
         result.push(`${d1}${d2}${i}`);
       }
       break;
-    case "Left": // Fix last two (d2, d3), vary first (d1 to 9)
+    case "ក្បាល": // Fix last two (d2, d3), vary first (d1 to 9)
       for (let i = d1; i <= 9; i++) {
         result.push(`${i}${d2}${d3}`);
       }
       break;
-    case "Middle": // Fix first and third (d1, d3), vary second (d2 to 9)
+    case "កណ្ដាល": // Fix first and third (d1, d3), vary second (d2 to 9)
       for (let i = d2; i <= 9; i++) {
         result.push(`${d1}${i}${d3}`);
       }
       break;
-    case "Middle + Right": // Fix first (d1), vary middle (d2 to 9) and right (d3 to 9)
+    case "កណ្ដាល + កន្ទុយ": // Fix first (d1), vary middle (d2 to 9) and right (d3 to 9)
       for (let i = d2; i <= 9; i++) {
         for (let j = d3; j <= 9; j++) {
           result.push(`${d1}${i}${j}`);
         }
       }
       break;
-    case "Left + Middle": // Fix third (d3), vary left (d1 to 9) and middle (d2 to 9)
+    case "ក្បាល + កណ្ដាល": // Fix third (d3), vary left (d1 to 9) and middle (d2 to 9)
       for (let i = d1; i <= 9; i++) {
         for (let j = d2; j <= 9; j++) {
           result.push(`${i}${j}${d3}`);
         }
       }
       break;
-    case "Left + Right": // Fix middle (d2), vary left (d1 to 9) and right (d3 to 9)
+    case "ក្បាល + កន្ទុយ": // Fix middle (d2), vary left (d1 to 9) and right (d3 to 9)
       for (let i = d1; i <= 9; i++) {
         for (let j = d3; j <= 9; j++) {
           result.push(`${i}${d2}${j}`);
@@ -205,10 +199,7 @@ const getThreeDigitRangeCombinations = (
  * @param syntaxType "2D" or "3D".
  * @returns An array of { label, value } for Select options.
  */
-const getRangeOptions = (
-  digits: string,
-  syntaxType: "2D" | "3D"
-): { label: string; value: string }[] => {
+const getRangeOptions = (digits: string, syntaxType: "2D" | "3D"): { label: string; value: string }[] => {
   const options: { label: string; value: string }[] = [];
 
   if (syntaxType === "2D") {
@@ -217,11 +208,11 @@ const getRangeOptions = (
 
     if (hasZeroLeft) {
       // e.g., 01
-      options.push({ label: "Left", value: "Left" });
+      options.push({ label: "ក្បាល", value: "ក្បាល" });
     }
     if (hasZeroRight) {
       // e.g., 10
-      options.push({ label: "Right", value: "Right" });
+      options.push({ label: "កន្ទុយ", value: "កន្ទុយ" });
     }
   } else if (syntaxType === "3D") {
     const hasZeroLeft = digits[0] === "0";
@@ -230,30 +221,30 @@ const getRangeOptions = (
 
     // Build options based on which positions have a '0'
     if (hasZeroLeft) {
-      options.push({ label: "Left", value: "Left" });
+      options.push({ value: "ក្បាល", label: "ក្បាល" });
     }
     if (hasZeroRight) {
-      options.push({ label: "Right", value: "Right" });
+      options.push({ value: "កន្ទុយ", label: "កន្ទុយ" });
     }
     if (hasZeroMiddle) {
-      options.push({ label: "Middle", value: "Middle" });
+      options.push({ value: "កណ្ដាល", label: "កណ្ដាល" });
     }
     if (hasZeroLeft && hasZeroMiddle) {
       options.push({
-        label: "Left + Middle",
-        value: "Left + Middle",
+        value: "ក្បាល + កណ្ដាល",
+        label: "ក្បាល + កណ្ដាល",
       });
     }
     if (hasZeroLeft && hasZeroRight) {
       options.push({
-        label: "Left + Right",
-        value: "Left + Right",
+        value: "ក្បាល + កន្ទុយ",
+        label: "ក្បាល + កន្ទុយ",
       });
     }
     if (hasZeroMiddle && hasZeroRight) {
       options.push({
-        label: "Middle + Right",
-        value: "Middle + Right",
+        value: "កណ្ដាល + កន្ទុយ",
+        label: "កណ្ដាល + កន្ទុយ",
       });
     }
   }
@@ -264,12 +255,8 @@ function App() {
   const [input, setInput] = useState<string>(""); // State for calculator display
   const [enteredNumbers, setEnteredNumbers] = useState<EnteredNumber[]>([]);
   const [amountInput, setAmountInput] = useState<string>("");
-  const [selectedServer, setSelectedServer] = useState<string | undefined>(
-    undefined
-  );
-  const [selectedServerTime, setSelectedServerTime] = useState<
-    string | undefined
-  >(undefined);
+  const [selectedServer, setSelectedServer] = useState<string | undefined>(undefined);
+  const [selectedServerTime, setSelectedServerTime] = useState<string | undefined>(undefined);
   const [selectedCurrency, setSelectedCurrency] = useState<string>("USD");
 
   const { message } = AntApp.useApp();
@@ -280,18 +267,13 @@ function App() {
 
   // New states for Range dropdown
   const [showRangeModal, setShowRangeModal] = useState<boolean>(false);
-  const [currentDigitsForRange, setCurrentDigitsForRange] =
-    useState<string>("");
-  const [availableRangeOptions, setAvailableRangeOptions] = useState<
-    { label: string; value: string }[]
-  >([]);
-  const [tempSelectedRange, setTempSelectedRange] = useState<
-    string | undefined
-  >(undefined);
+  const [currentDigitsForRange, setCurrentDigitsForRange] = useState<string>("");
+  const [availableRangeOptions, setAvailableRangeOptions] = useState<{ label: string; value: string }[]>([]);
+  const [tempSelectedRange, setTempSelectedRange] = useState<string | undefined>(undefined);
 
   // Fetch servers data from JSON on component mount
   useEffect(() => {
-    fetch("/data/servers.json") // Assumes servers.json is in the public/data directory
+    fetch("data/servers.json") // Assumes servers.json is in the public/data directory
       .then((response) => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -299,9 +281,7 @@ function App() {
         return response.json();
       })
       .then((data) => setServers(data))
-      .catch((error) =>
-        message.error("Failed to load server data: " + error.message)
-      );
+      .catch((error) => message.error("Failed to load server data: " + error.message));
   }, [message]);
 
   // Effect to update channels and p-buttons when server time changes
@@ -311,12 +291,8 @@ function App() {
       const time = server?.times.find((t) => t.id === selectedServerTime);
       if (time) {
         // Reset active state for buttons when server time changes
-        setChannelsButtons(
-          time.channels.map((channel) => ({ ...channel, isActive: false }))
-        );
-        setPButtons(
-          time.pButtons.map((pBtn) => ({ ...pBtn, isActive: false }))
-        );
+        setChannelsButtons(time.channels.map((channel) => ({ ...channel, isActive: false })));
+        setPButtons(time.pButtons.map((pBtn) => ({ ...pBtn, isActive: false })));
       }
     } else {
       // Clear buttons if no server or server time is selected
@@ -332,14 +308,9 @@ function App() {
   const handleCalculatorInputChange = useCallback(
     (newInput: string) => {
       // If the new input ends with '>', trigger the range modal
-      if (
-        newInput.endsWith(">") &&
-        newInput.length > 1 &&
-        !newInput.includes("X")
-      ) {
+      if (newInput.endsWith(">") && newInput.length > 1 && !newInput.includes("X")) {
         const digits = newInput.slice(0, -1); // Get digits before '>'
-        const syntaxType =
-          digits.length === 2 ? "2D" : digits.length === 3 ? "3D" : undefined;
+        const syntaxType = digits.length === 2 ? "2D" : digits.length === 3 ? "3D" : undefined;
 
         if (syntaxType) {
           const options = getRangeOptions(digits, syntaxType);
@@ -413,21 +384,15 @@ function App() {
       return;
     }
 
-    const selectedActiveChannels = channelsButtons.filter(
-      (button) => button.isActive
-    );
+    const selectedActiveChannels = channelsButtons.filter((button) => button.isActive);
 
     if (!VALID_FINAL_INPUT_REGEX.test(input)) {
-      message.error(
-        "Invalid number format. Please follow ##, ###, ##X, ##>, ###X, or ###>."
-      );
+      message.error("Invalid number format. Please follow ##, ###, ##X, ##>, ###X, or ###>.");
       return;
     }
 
     if (selectedActiveChannels.length === 0) {
-      message.error(
-        "Please select at least one channel (A, B, C, D, Ho, I, N, Lo, etc.) to proceed."
-      );
+      message.error("Please select at least one channel (A, B, C, D, Ho, I, N, Lo, etc.) to proceed.");
       return;
     }
 
@@ -456,6 +421,7 @@ function App() {
     let selectedRangeType: string | undefined = undefined;
 
     const rangeMatch = input.match(RANGE_INPUT_REGEX);
+    console.log("Range Match:", rangeMatch);
 
     if (rangeMatch) {
       digitsPart = rangeMatch[1];
@@ -463,17 +429,11 @@ function App() {
 
       if (digitsPart.length === 2) {
         syntaxType = "2D";
-        combinedNumbers = getTwoDigitRangeCombinations(
-          digitsPart,
-          selectedRangeType
-        );
+        combinedNumbers = getTwoDigitRangeCombinations(digitsPart, selectedRangeType);
         numberOfCombinations = combinedNumbers.length;
       } else if (digitsPart.length === 3) {
         syntaxType = "3D";
-        combinedNumbers = getThreeDigitRangeCombinations(
-          digitsPart,
-          selectedRangeType
-        );
+        combinedNumbers = getThreeDigitRangeCombinations(digitsPart, selectedRangeType);
         numberOfCombinations = combinedNumbers.length;
       } else {
         message.error("Invalid number format for based on digit count.");
@@ -516,19 +476,14 @@ function App() {
       const multiplier = channel.multipliers[syntaxType];
       totalMultiplier += multiplier;
       // Store the full formatted string for tooltip, and just the label for for main display
-      displayChannelsArray.push(
-        `${channel.label} (${syntaxType}x${multiplier})`
-      );
+      displayChannelsArray.push(`${channel.label} (${syntaxType}x${multiplier})`);
     });
 
     // Calculate total amount using the summed multiplier and number of combinations
-    const calculatedTotalAmount =
-      parsedAmount * totalMultiplier * numberOfCombinations;
+    const calculatedTotalAmount = parsedAmount * totalMultiplier * numberOfCombinations;
 
     // Store channel IDs in the enteredNumbers state for easier lookup later
-    const selectedChannelIdsArray = selectedActiveChannels.map(
-      (button) => button.id
-    );
+    const selectedChannelIdsArray = selectedActiveChannels.map((button) => button.id);
 
     // Add the new entry to the table data
     setEnteredNumbers((prevNumbers) => [
@@ -565,22 +520,16 @@ function App() {
    */
   const handleChannelButtonClick = (clickedId: string) => {
     // Deactivate all P buttons when a channel button is clicked
-    setPButtons((prevPButtons) =>
-      prevPButtons.map((button) => ({ ...button, isActive: false }))
-    );
+    setPButtons((prevPButtons) => prevPButtons.map((button) => ({ ...button, isActive: false })));
 
     setChannelsButtons((prevChannelsButtons) => {
-      const clickedButton = prevChannelsButtons.find(
-        (button) => button.id === clickedId
-      );
+      const clickedButton = prevChannelsButtons.find((button) => button.id === clickedId);
 
       if (!clickedButton) return prevChannelsButtons; // Should not happen
 
       // If the clicked button is already active, deactivate it
       if (clickedButton.isActive) {
-        return prevChannelsButtons.map((button) =>
-          button.id === clickedId ? { ...button, isActive: false } : button
-        );
+        return prevChannelsButtons.map((button) => (button.id === clickedId ? { ...button, isActive: false } : button));
       }
 
       // Determine which buttons conflict with the clicked button
@@ -605,17 +554,13 @@ function App() {
    */
   const handlePButtonClick = (clickedId: string) => {
     setPButtons((prevPButtons) => {
-      const clickedPButton = prevPButtons.find(
-        (button) => button.id === clickedId
-      );
+      const clickedPButton = prevPButtons.find((button) => button.id === clickedId);
 
       if (!clickedPButton) return prevPButtons; // Should not happen
 
       // If the clicked P button is already active, deactivate it and all channels
       if (clickedPButton.isActive) {
-        setChannelsButtons((prevChannels) =>
-          prevChannels.map((channel) => ({ ...channel, isActive: false }))
-        );
+        setChannelsButtons((prevChannels) => prevChannels.map((channel) => ({ ...channel, isActive: false })));
         return prevPButtons.map((button) => ({ ...button, isActive: false }));
       }
 
@@ -685,17 +630,9 @@ function App() {
         // Only show tooltip if there are combinations (i.e., 'X' or was used)
         if (record.numberOfCombinations > 1) {
           return (
-            <Tooltip
-              title={
-                <div style={{ whiteSpace: "pre-line" }}>
-                  {record.combinedNumbers.join(", ")}
-                </div>
-              }
-            >
+            <Tooltip title={<div style={{ whiteSpace: "pre-line" }}>{record.combinedNumbers.join(", ")}</div>}>
               <span>{displayNum} </span>
-              <span style={{ color: "#1890ff" }}>
-                ({record.numberOfCombinations})
-              </span>
+              <span style={{ color: "#1890ff" }}>({record.numberOfCombinations})</span>
             </Tooltip>
           );
         }
@@ -737,13 +674,7 @@ function App() {
 
         // Use Tooltip to show the full displayChannels, now wrapping the labels directly
         return (
-          <Tooltip
-            title={
-              <div style={{ whiteSpace: "pre-line" }}>
-                {record.displayChannels.join("\n")}
-              </div>
-            }
-          >
+          <Tooltip title={<div style={{ whiteSpace: "pre-line" }}>{record.displayChannels.join("\n")}</div>}>
             <span>{channelLabels} </span>
             {/* Add the total multiplier in blue and wrap it in the tooltip */}
             <span style={{ color: "#1890ff" }}>({record.totalMultiplier})</span>
@@ -757,9 +688,7 @@ function App() {
       key: "totalMultiplier",
       width: "10%",
       render: (text, record) => {
-        return record.numberOfCombinations > 1
-          ? `${record.numberOfCombinations} x ${record.totalMultiplier}`
-          : record.totalMultiplier;
+        return record.numberOfCombinations > 1 ? `${record.numberOfCombinations} x ${record.totalMultiplier}` : record.totalMultiplier;
       },
     },
     {
@@ -771,9 +700,7 @@ function App() {
   ];
 
   // Dynamically get available server times based on selected server
-  const availableServerTimes = selectedServer
-    ? servers.find((s) => s.id === selectedServer)?.times || []
-    : [];
+  const availableServerTimes = selectedServer ? servers.find((s) => s.id === selectedServer)?.times || [] : [];
 
   const handleRangeModalOk = () => {
     if (tempSelectedRange) {
@@ -802,25 +729,14 @@ function App() {
               <Col span={10}>
                 {/* Server and Server Time Selectors */}
                 <div style={{ marginBottom: "15px" }}>
-                  <Select
-                    placeholder="Select Server"
-                    style={{ width: "100%", marginBottom: "10px" }}
-                    onChange={handleServerChange}
-                    value={selectedServer}
-                  >
+                  <Select placeholder="Select Server" style={{ width: "100%", marginBottom: "10px" }} onChange={handleServerChange} value={selectedServer}>
                     {servers.map((server) => (
                       <Option key={server.id} value={server.id}>
                         {server.label}
                       </Option>
                     ))}
                   </Select>
-                  <Select
-                    placeholder="Select Server Time"
-                    style={{ width: "100%" }}
-                    onChange={handleServerTimeChange}
-                    value={selectedServerTime}
-                    disabled={!selectedServer}
-                  >
+                  <Select placeholder="Select Server Time" style={{ width: "100%" }} onChange={handleServerTimeChange} value={selectedServerTime} disabled={!selectedServer}>
                     {availableServerTimes.map((time) => (
                       <Option key={time.id} value={time.id}>
                         {time.label}
@@ -833,16 +749,8 @@ function App() {
                 <div className="middle-controls-container">
                   <div className="middle-controls-left-column">
                     {channelsButtons.map((button) => (
-                      <Button
-                        key={button.id}
-                        onClick={() => handleChannelButtonClick(button.id)}
-                        className={`middle-control-button ${
-                          button.isActive ? "active" : ""
-                        }`}
-                        disabled={!selectedServerTime}
-                      >
-                        {button.label} (2Dx{button.multipliers["2D"]}, 3Dx
-                        {button.multipliers["3D"]})
+                      <Button key={button.id} onClick={() => handleChannelButtonClick(button.id)} className={`middle-control-button ${button.isActive ? "active" : ""}`} disabled={!selectedServerTime}>
+                        {button.label} ({button.multipliers["2D"]},{button.multipliers["3D"]})
                       </Button>
                     ))}
                   </div>
@@ -852,9 +760,7 @@ function App() {
                       <Button
                         key={button.id}
                         onClick={() => handlePButtonClick(button.id)}
-                        className={`middle-control-button p-button ${
-                          button.isActive ? "active" : ""
-                        }`}
+                        className={`middle-control-button p-button ${button.isActive ? "active" : ""}`}
                         disabled={!selectedServerTime}
                       >
                         {button.label}
@@ -867,10 +773,7 @@ function App() {
               </Col>
               <Col span={14}>
                 {/* Use the new CalculatorPad component here */}
-                <CalculatorPad
-                  input={input}
-                  onInputChange={handleCalculatorInputChange}
-                />
+                <CalculatorPad input={input} onInputChange={handleCalculatorInputChange} />
                 <div style={{ marginTop: "15px" }}>
                   <Row>
                     <Col span={19}>
@@ -906,12 +809,7 @@ function App() {
             {/* Enter Button */}
             <Row style={{ marginTop: "15px" }}>
               <Col span={24}>
-                <Button
-                  onClick={handleEnterClick}
-                  className="antd-calc-button-enter"
-                  block
-                  disabled={!selectedServerTime}
-                >
+                <Button onClick={handleEnterClick} className="antd-calc-button-enter" block disabled={!selectedServerTime}>
                   Enter
                 </Button>
               </Col>
@@ -922,34 +820,16 @@ function App() {
           <Col span={14}>
             <div className="entered-numbers-table">
               <h2>Entered Data</h2>
-              <Table
-                dataSource={enteredNumbers}
-                columns={columns}
-                pagination={false}
-                size="small"
-                scroll={{ y: 550 }}
-              />
+              <Table dataSource={enteredNumbers} columns={columns} pagination={false} size="small" scroll={{ y: 550 }} />
             </div>
           </Col>
         </Row>
       </div>
 
       {/* Selection Modal */}
-      <Modal
-        title="Select Option"
-        open={showRangeModal}
-        onOk={handleRangeModalOk}
-        onCancel={handleRangeModalCancel}
-        okText="Select"
-        cancelText="Cancel"
-      >
+      <Modal title="Select Option" open={showRangeModal} onOk={handleRangeModalOk} onCancel={handleRangeModalCancel} okText="Select" cancelText="Cancel">
         <p>Please select a option for "{currentDigitsForRange}":</p>
-        <Select
-          placeholder="Select Range"
-          style={{ width: "100%" }}
-          onChange={(value: string) => setTempSelectedRange(value)}
-          value={tempSelectedRange}
-        >
+        <Select placeholder="Select Range" style={{ width: "100%" }} onChange={(value: string) => setTempSelectedRange(value)} value={tempSelectedRange}>
           {availableRangeOptions.map((option) => (
             <Option key={option.value} value={option.value}>
               {option.label}

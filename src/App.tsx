@@ -1,3 +1,4 @@
+// src/App.tsx
 import { useCallback, useState, useEffect } from "react";
 import {
   Button,
@@ -126,9 +127,10 @@ const getThreeDigitPermutations = (numStr: string): string[] => {
 };
 
 /**
- * Generates combinations for 3-digit numbers based on range.
- * @param startDigits The starting 3-digit number string.
- * @param endDigits Optional. The ending 3-digit number string for compound ranges. If undefined, implies "start to 999".
+ * Generates combinations for 2-digit or 3-digit numbers based on range.
+ * @param startDigits The starting number string.
+ * @param endDigits The ending number string.
+ * @param digit The number of digits (2 for ##, 3 for ###).
  * @returns An array of combined number strings.
  */
 const getRangeCombinations = (
@@ -155,6 +157,182 @@ const getRangeCombinations = (
     result.push(i.toString().padStart(digit, "0"));
   }
 
+  return Array.from(new Set(result));
+};
+
+/**
+ * Generates combinations for 2-digit numbers based on the '>' range.
+ * @param startDigits The starting number string.
+ * @param endDigits The ending number string (optional, for ##>##).
+ * @returns An array of combined number strings.
+ */
+const getTwoDigitMapRangeCombinations = (
+  startDigits: string,
+  endDigits?: string
+): string[] => {
+  const result: string[] = [];
+  const startNum = parseInt(startDigits, 10);
+
+  if (isNaN(startNum) || startDigits.length !== 2) return [];
+
+  if (endDigits === undefined) {
+    // Simple range, e.g., "10>" means 10, 11, ..., 19 (10 numbers)
+    // 15> means 15, ..., 24 (10 numbers)
+    for (let i = startNum; i < startNum + 10; i++) {
+      result.push(i.toString().padStart(2, "0"));
+    }
+  } else {
+    // Compound range, e.g., "10>15", "51>91", "00>99"
+    const endNum = parseInt(endDigits, 10);
+    if (isNaN(endNum) || endDigits.length !== 2) return [];
+
+    const startD1 = startDigits[0];
+    const startD2 = startDigits[1];
+    const endD1 = endDigits[0];
+    const endD2 = endDigits[1];
+
+    if (startNum > endNum) {
+      return []; // Invalid range if start is greater than end
+    }
+
+    // Special case: XX>YY where X and Y are repeating digits (e.g., 00>99, 22>55)
+    if (startD1 === startD2 && endD1 === endD2) {
+      for (let i = parseInt(startD1); i <= parseInt(endD1); i++) {
+        result.push(`${i}${i}`);
+      }
+    }
+    // Case: First digit matches (e.g., 11>15, 20>25)
+    else if (startD1 === endD1) {
+      for (let i = startNum; i <= endNum; i++) {
+        result.push(i.toString().padStart(2, "0"));
+      }
+    }
+    // Case: Second digit matches (e.g., 51>91, 30>70)
+    else if (startD2 === endD2) {
+      for (let i = parseInt(startD1); i <= parseInt(endD1); i++) {
+        result.push(`${i}${startD2}`);
+      }
+    }
+    // Invalid compound range (e.g., 12>23)
+    else {
+      return [];
+    }
+  }
+  return Array.from(new Set(result));
+};
+
+/**
+ * Generates combinations for 3-digit numbers based on the '>' range.
+ * @param startDigits The starting number string.
+ * @param endDigits The ending number string (optional, for ###>###).
+ * @returns An array of combined number strings.
+ */
+const getThreeDigitMapRangeCombinations = (
+  startDigits: string,
+  endDigits?: string
+): string[] => {
+  const result: string[] = [];
+  const startNum = parseInt(startDigits, 10);
+
+  // Validate startDigits: must be a 3-digit number.
+  if (isNaN(startNum) || startDigits.length !== 3) {
+    return [];
+  }
+
+  if (endDigits === undefined) {
+    // Case: Simple range (e.g., "115>" implies 10 numbers starting from 115)
+    // Generates 10 sequential numbers starting from startDigits.
+    for (let i = startNum; i < startNum + 10; i++) {
+      // Pad with leading zeros to ensure 3 digits.
+      result.push(i.toString().padStart(3, "0"));
+    }
+  } else {
+    // Case: Compound range (e.g., "110>115", "000>999")
+    const endNum = parseInt(endDigits, 10);
+
+    // Validate endDigits: must be a 3-digit number and startNum cannot be greater than endNum.
+    if (isNaN(endNum) || endDigits.length !== 3 || startNum > endNum) {
+      return [];
+    }
+
+    const startD1 = startDigits[0];
+    const startD2 = startDigits[1];
+    const startD3 = startDigits[2];
+    const endD1 = endDigits[0];
+    const endD2 = endDigits[1];
+    const endD3 = endDigits[2];
+
+    // Most specific cases first
+
+    // Special case 1: XXX>YYY where X and Y are repeating digits (e.g., 000>999, 222>555)
+    // This condition checks if both startDigits and endDigits are composed of repeating digits (e.g., 111, 222).
+    if (
+      startD1 === startD2 &&
+      startD2 === startD3 &&
+      endD1 === endD2 &&
+      endD2 === endD3
+    ) {
+      for (let i = parseInt(startD1); i <= parseInt(endD1); i++) {
+        result.push(`${i}${i}${i}`);
+      }
+    }
+    // Case: First two digits match for start and end, and third digit also matches (e.g., 115>555)
+    // This implies the first two digits iterate together (e.g., 11, 22, 33...) while the third digit remains constant.
+    else if (startD1 === startD2 && endD1 === endD2 && startD3 === endD3) {
+      for (let i = parseInt(startD1); i <= parseInt(endD1); i++) {
+        result.push(`${i}${i}${startD3}`);
+      }
+    }
+    // New Case: Fixed First Digit, Varying Second and Third (e.g., 511>566)
+    // This pattern implies that the first digit is constant, while the second and third digits iterate simultaneously.
+    else if (startD1 === endD1 && startD2 !== endD2 && startD3 !== endD3) {
+      for (
+        let i = parseInt(startD2), j = parseInt(startD3);
+        i <= parseInt(endD2) && j <= parseInt(endD3);
+        i++, j++
+      ) {
+        result.push(`${startD1}${i}${j}`);
+      }
+    }
+    // New Case: Fixed Second Digit, Varying First and Third (e.g., 151>555)
+    // This pattern implies that the second digit is constant, while the first and third digits iterate simultaneously.
+    else if (startD2 === endD2 && startD1 !== endD1 && startD3 !== endD3) {
+      for (
+        let i = parseInt(startD1), j = parseInt(startD3);
+        i <= parseInt(endD1) && j <= parseInt(endD3);
+        i++, j++
+      ) {
+        result.push(`${i}${startD2}${j}`);
+      }
+    }
+    // General cases with two matching digits
+    // Case: First and second digit matches (e.g., 111>115, 120>125)
+    // This condition covers ranges where the first two digits are fixed, and only the third digit changes.
+    else if (startD1 === endD1 && startD2 === endD2) {
+      for (let i = parseInt(startD3); i <= parseInt(endD3); i++) {
+        result.push(`${startD1}${startD2}${i}`);
+      }
+    }
+    // Case: First and Third digit matches (e.g., 111>151, 125>195)
+    // This condition covers ranges where the first and third digits are fixed, and only the second digit changes.
+    else if (startD1 === endD1 && startD3 === endD3) {
+      for (let i = parseInt(startD2); i <= parseInt(endD2); i++) {
+        result.push(`${startD1}${i}${startD3}`);
+      }
+    }
+    // Case: Second and Third digit matches (e.g., 111>511, 125>525)
+    // This condition covers ranges where the second and third digits are fixed, and only the first digit changes.
+    else if (startD2 === endD2 && startD3 === endD3) {
+      for (let i = parseInt(startD1); i <= parseInt(endD1); i++) {
+        result.push(`${i}${startD2}${startD3}`);
+      }
+    }
+    // If none of the defined patterns match, return an empty array as per the problem description's implied behavior for invalid compound ranges.
+    else {
+      return [];
+    }
+  }
+  // Remove any potential duplicates and return the array.
   return Array.from(new Set(result));
 };
 
@@ -317,6 +495,37 @@ function App() {
         combinedNumbers = getThreeDigitPermutations(digitsPart);
       } else {
         message.error("Invalid number format for permutation.");
+        return;
+      }
+      numberOfCombinations = combinedNumbers.length;
+    }
+    // Check for '>' operator
+    else if (input.includes(">")) {
+      const parts = input.split(">");
+      const startDigits = parts[0];
+      const endDigits = parts[1] || undefined; // Can be undefined for ##> or ###>
+
+      if (startDigits.length === 2) {
+        syntaxType = "2D";
+        combinedNumbers = getTwoDigitMapRangeCombinations(
+          startDigits,
+          endDigits
+        );
+      } else if (startDigits.length === 3) {
+        syntaxType = "3D";
+        combinedNumbers = getThreeDigitMapRangeCombinations(
+          startDigits,
+          endDigits
+        );
+      } else {
+        message.error("Invalid number format for range.");
+        return;
+      }
+
+      if (combinedNumbers.length === 0) {
+        message.error(
+          "Invalid range specified or start number is greater than end number, or an invalid type of range for 2-digit numbers."
+        );
         return;
       }
       numberOfCombinations = combinedNumbers.length;
@@ -515,7 +724,6 @@ function App() {
     setSelectedCurrency(value);
   };
 
-  // Column definitions for the Ant Design Table
   const columns: ColumnsType<EnteredNumber> = [
     {
       title: "No.",
@@ -550,6 +758,18 @@ function App() {
           );
         }
         return <span>{displayNum}</span>;
+      },
+    },
+    // New column for number combinations list
+    {
+      title: "Combinations List", // New column title
+      key: "combinedNumbersList", // Unique key for the new column
+      width: "40%", // Assign an appropriate width
+      render: (_text, record) => {
+        // Display the combined numbers joined by comma and space
+        return record.combinedNumbers && Array.isArray(record.combinedNumbers)
+          ? record.combinedNumbers.join(", ")
+          : ""; // Return empty string if no combinations or not an array
       },
     },
     {
@@ -630,7 +850,7 @@ function App() {
       <div className="container">
         <Row gutter={[20, 20]} style={{ width: "100%" }}>
           {/* Left Column: Calculator and Input */}
-          <Col span={10}>
+          <Col span={8}>
             <Row gutter={[10, 10]}>
               {/* Right Column within Left Section: Server, Time, Channels, P-Buttons, Amount, Currency */}
               <Col span={10}>
@@ -753,7 +973,7 @@ function App() {
           </Col>
 
           {/* Right Column: Entered Data Table */}
-          <Col span={14}>
+          <Col span={16}>
             <div className="entered-numbers-table">
               <h2>Entered Data</h2>
               <Table
@@ -761,7 +981,7 @@ function App() {
                 columns={columns}
                 pagination={false}
                 size="small"
-                scroll={{ y: 550 }}
+                scroll={{ y: 700 }}
               />
             </div>
           </Col>

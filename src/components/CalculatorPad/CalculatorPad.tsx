@@ -196,12 +196,21 @@ const CalculatorPad: React.FC<CalculatorPadProps> = ({
 
         <Col span={6}>
           <Button
+            onClick={() => handleNumberClick("Del")}
+            className="antd-calc-button antd-calc-button-clear"
+          >
+            Del
+          </Button>
+        </Col>
+
+        {/* <Col span={6}>
+          <Button
             onClick={() => handleNumberClick("~")}
             className="antd-calc-button"
           >
             ~
           </Button>
-        </Col>
+        </Col> */}
 
         {/* Fourth Row: 0, ~, Del */}
         <Col span={12}>
@@ -216,20 +225,12 @@ const CalculatorPad: React.FC<CalculatorPadProps> = ({
           </Button>
         </Col>
 
-        <Col span={6}>
-          <Button
-            onClick={() => handleNumberClick("Del")}
-            className="antd-calc-button antd-calc-button-clear"
-          >
-            Del
-          </Button>
-        </Col>
-        <Col span={6}>
+        <Col span={12}>
           <Button
             onClick={() => handleNumberClick("C")}
             className="antd-calc-button antd-calc-button-clear"
           >
-            C
+            Clear
           </Button>
         </Col>
       </Row>

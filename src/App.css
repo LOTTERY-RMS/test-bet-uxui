@@ -134,7 +134,7 @@ body {
   flex-grow: 1;
   flex-shrink: 1;
   min-width: 280px;
-  max-height: 700px;
+  max-height: 900px;
   overflow-y: auto;
 }
 

@@ -13,6 +13,8 @@ const VALID_FINAL_INPUT_PATTERNS = [
   /^\d{3}>$/, // ###>
   /^\d{3}>\d{3}$/, // ###>###
   /^\d{2}>\d{2}$/, // ##>##
+  /^\d{3}~\d{3}$/, // ###~###
+  /^\d{2}~\d{2}$/, // ##~##
 ];
 
 interface CalculatorPadProps {
@@ -39,11 +41,11 @@ const CalculatorPad: React.FC<CalculatorPadProps> = ({
     // Allow 1-3 digits
     if (/^\d{1,3}$/.test(potentialInput)) return true;
 
-    // Allow 2 or 3 digits followed by 'X' or '>'
-    if (/^(\d{2}|\d{3})[X>]$/.test(potentialInput)) return true;
+    // Allow 2 or 3 digits followed by 'X', '>', or '~'
+    if (/^(\d{2}|\d{3})[X>~]$/.test(potentialInput)) return true;
 
-    // Allow 2 or 3 digits, then '>', then 1 to 3 digits (for compound ranges in progress)
-    if (/^(\d{2}|\d{3})>\d{1,3}$/.test(potentialInput)) return true;
+    // Allow 2 or 3 digits, then '>', or '~' then 0 to 3 digits (for compound ranges in progress)
+    if (/^(\d{2}|\d{3})[>~]\d{0,3}$/.test(potentialInput)) return true;
 
     return false;
   };
@@ -58,38 +60,38 @@ const CalculatorPad: React.FC<CalculatorPadProps> = ({
   };
 
   /**
-   * Handles clicks on number and special character buttons (X, >).
+   * Handles clicks on number and special character buttons (X, >, ~).
    * Manages the input string based on predefined regex patterns.
-   * 'C' clears the input.
+   * 'C' clears the input. 'Del' removes the last character.
    */
   const handleNumberClick = useCallback(
     (char: string) => {
-      let updatedInput = input; // Start with the current input prop value
+      let currentInput = input;
 
-      // Clear button functionality
       if (char === "C") {
-        updatedInput = "";
+        currentInput = "";
+      } else if (char === "Del") {
+        currentInput = input.slice(0, -1);
       } else {
         const newPotentialInput = input + char;
 
-        if (isInputValidForPrefix(newPotentialInput)) {
-          updatedInput = newPotentialInput;
+        // Check if the new potential input is a valid intermediate state or a valid final pattern
+        if (
+          isInputValidForPrefix(newPotentialInput) ||
+          isFinalInputValid(newPotentialInput)
+        ) {
+          currentInput = newPotentialInput;
         } else {
-          // If it's not a valid intermediate prefix, check if adding 'char'
-          // completes a final valid pattern (e.g., adding the last digit for ##>##)
-          if (isFinalInputValid(newPotentialInput)) {
-            updatedInput = newPotentialInput;
-          } else {
-            message.error(
-              "Invalid input sequence. Please follow ##, ###, ##X, ##>, ###X, ###>, ###>###, or ##>##."
-            );
-            updatedInput = input; // Revert to previous valid input
-          }
+          // If neither, it's an invalid sequence, revert to previous input
+          message.error(
+            "Invalid input sequence. Please follow patterns like ##, ###, ##X, ###X, ##>, ###>, ###>###, ##>##, ###~###, or ##~##."
+          );
+          return; // Do not update input
         }
       }
-      onInputChange(updatedInput); // Pass the final string directly
+      onInputChange(currentInput);
     },
-    [input, message, onInputChange] // Add 'input' to dependencies
+    [input, message, onInputChange]
   );
 
   return (
@@ -98,7 +100,8 @@ const CalculatorPad: React.FC<CalculatorPadProps> = ({
         <div className="result">{input || "_"}</div>
       </div>
       <Row gutter={[10, 10]} className="input-grid">
-        <Col span={8}>
+        {/* First Row: 7, 8, 9, C */}
+        <Col span={6}>
           <Button
             onClick={() => handleNumberClick("7")}
             className="antd-calc-button"
@@ -106,7 +109,7 @@ const CalculatorPad: React.FC<CalculatorPadProps> = ({
             7
           </Button>
         </Col>
-        <Col span={8}>
+        <Col span={6}>
           <Button
             onClick={() => handleNumberClick("8")}
             className="antd-calc-button"
@@ -114,7 +117,7 @@ const CalculatorPad: React.FC<CalculatorPadProps> = ({
             8
           </Button>
         </Col>
-        <Col span={8}>
+        <Col span={6}>
           <Button
             onClick={() => handleNumberClick("9")}
             className="antd-calc-button"
@@ -122,55 +125,7 @@ const CalculatorPad: React.FC<CalculatorPadProps> = ({
             9
           </Button>
         </Col>
-        <Col span={8}>
-          <Button
-            onClick={() => handleNumberClick("4")}
-            className="antd-calc-button"
-          >
-            4
-          </Button>
-        </Col>
-        <Col span={8}>
-          <Button
-            onClick={() => handleNumberClick("5")}
-            className="antd-calc-button"
-          >
-            5
-          </Button>
-        </Col>
-        <Col span={8}>
-          <Button
-            onClick={() => handleNumberClick("6")}
-            className="antd-calc-button"
-          >
-            6
-          </Button>
-        </Col>
-        <Col span={8}>
-          <Button
-            onClick={() => handleNumberClick("1")}
-            className="antd-calc-button"
-          >
-            1
-          </Button>
-        </Col>
-        <Col span={8}>
-          <Button
-            onClick={() => handleNumberClick("2")}
-            className="antd-calc-button"
-          >
-            2
-          </Button>
-        </Col>
-        <Col span={8}>
-          <Button
-            onClick={() => handleNumberClick("3")}
-            className="antd-calc-button"
-          >
-            3
-          </Button>
-        </Col>
-        <Col span={8}>
+        <Col span={6}>
           <Button
             onClick={() => handleNumberClick("X")}
             className="antd-calc-button"
@@ -178,15 +133,33 @@ const CalculatorPad: React.FC<CalculatorPadProps> = ({
             X
           </Button>
         </Col>
-        <Col span={8}>
+
+        {/* Second Row: 4, 5, 6, X */}
+        <Col span={6}>
           <Button
-            onClick={() => handleNumberClick("0")}
+            onClick={() => handleNumberClick("4")}
             className="antd-calc-button"
           >
-            0
+            4
           </Button>
         </Col>
-        <Col span={8}>
+        <Col span={6}>
+          <Button
+            onClick={() => handleNumberClick("5")}
+            className="antd-calc-button"
+          >
+            5
+          </Button>
+        </Col>
+        <Col span={6}>
+          <Button
+            onClick={() => handleNumberClick("6")}
+            className="antd-calc-button"
+          >
+            6
+          </Button>
+        </Col>
+        <Col span={6}>
           <Button
             onClick={() => handleNumberClick(">")}
             className="antd-calc-button"
@@ -194,13 +167,69 @@ const CalculatorPad: React.FC<CalculatorPadProps> = ({
             &gt;
           </Button>
         </Col>
-        <Col span={24}>
+
+        {/* Third Row: 1, 2, 3, > */}
+        <Col span={6}>
+          <Button
+            onClick={() => handleNumberClick("1")}
+            className="antd-calc-button"
+          >
+            1
+          </Button>
+        </Col>
+        <Col span={6}>
+          <Button
+            onClick={() => handleNumberClick("2")}
+            className="antd-calc-button"
+          >
+            2
+          </Button>
+        </Col>
+        <Col span={6}>
+          <Button
+            onClick={() => handleNumberClick("3")}
+            className="antd-calc-button"
+          >
+            3
+          </Button>
+        </Col>
+
+        <Col span={6}>
+          <Button
+            onClick={() => handleNumberClick("~")}
+            className="antd-calc-button"
+          >
+            ~
+          </Button>
+        </Col>
+
+        {/* Fourth Row: 0, ~, Del */}
+        <Col span={12}>
+          {" "}
+          {/* Span 12 for 0 to make it wider */}
+          <Button
+            onClick={() => handleNumberClick("0")}
+            className="antd-calc-button"
+            style={{ width: "100%", borderRadius: "40px" }}
+          >
+            0
+          </Button>
+        </Col>
+
+        <Col span={6}>
+          <Button
+            onClick={() => handleNumberClick("Del")}
+            className="antd-calc-button antd-calc-button-clear"
+          >
+            Del
+          </Button>
+        </Col>
+        <Col span={6}>
           <Button
             onClick={() => handleNumberClick("C")}
             className="antd-calc-button antd-calc-button-clear"
-            block
           >
-            Clear
+            C
           </Button>
         </Col>
       </Row>

@@ -46,7 +46,6 @@ interface EnteredNumber {
   totalMultiplier: number; // Added to store the calculated total multiplier
   numberOfCombinations: number; // New: To store the count of combinations
   combinedNumbers: string[]; // Storing combined numbers for tooltip display
-  rangeType?: string; // New: To store the selected range type (e.g., "Simple Range", "12>34")
 }
 
 interface ServerTime {
@@ -62,7 +61,7 @@ interface Server {
   times: ServerTime[];
 }
 
-// Define the valid final input patterns
+// Define the valid final input patterns (consistent with CalculatorPad.tsx)
 const VALID_FINAL_INPUT_PATTERNS = [
   /^\d{2}$/, // ##
   /^\d{3}$/, // ###
@@ -72,6 +71,8 @@ const VALID_FINAL_INPUT_PATTERNS = [
   /^\d{3}>$/, // ###>
   /^\d{3}>\d{3}$/, // ###>###
   /^\d{2}>\d{2}$/, // ##>##
+  /^\d{3}~\d{3}$/, // ###~###
+  /^\d{2}~\d{2}$/, // ##~##
 ];
 
 /**
@@ -125,71 +126,35 @@ const getThreeDigitPermutations = (numStr: string): string[] => {
 };
 
 /**
- * Generates combinations for 2-digit numbers based on range.
- * @param startDigits The starting 2-digit number string.
- * @param endDigits Optional. The ending 2-digit number string for compound ranges. If undefined, implies "start to 99".
- * @returns An array of combined number strings.
- */
-const getTwoDigitRangeCombinations = (
-  startDigits: string,
-  endDigits?: string
-): string[] => {
-  const result: string[] = [];
-  const startNum = parseInt(startDigits, 10);
-
-  if (isNaN(startNum) || startDigits.length !== 2) return [];
-
-  if (endDigits === undefined) {
-    // Simple range, e.g., "10>" means 10, 11, ..., 99
-
-    for (let i = startNum; i <= startNum + 10; i++) {
-      result.push(i.toString().padStart(2, "0"));
-    }
-  } else {
-    // Compound range, e.g., "10>15"
-    const endNum = parseInt(endDigits, 10);
-    if (isNaN(endNum) || endDigits.length !== 2) return [];
-    if (startNum > endNum) {
-      return []; // Indicate invalid range to be handled by caller
-    }
-    for (let i = startNum; i <= endNum; i++) {
-      result.push(i.toString().padStart(2, "0"));
-    }
-  }
-  return Array.from(new Set(result));
-};
-
-/**
  * Generates combinations for 3-digit numbers based on range.
  * @param startDigits The starting 3-digit number string.
  * @param endDigits Optional. The ending 3-digit number string for compound ranges. If undefined, implies "start to 999".
  * @returns An array of combined number strings.
  */
-const getThreeDigitRangeCombinations = (
+const getRangeCombinations = (
   startDigits: string,
-  endDigits?: string
+  endDigits: string,
+  digit: number
 ): string[] => {
   const result: string[] = [];
   const startNum = parseInt(startDigits, 10);
+  const endNum = parseInt(endDigits, 10);
 
-  if (isNaN(startNum) || startDigits.length !== 3) return [];
+  if (
+    isNaN(startNum) ||
+    startDigits.length !== digit ||
+    isNaN(endNum) ||
+    endDigits.length !== digit
+  )
+    return [];
 
-  if (endDigits === undefined) {
-    // Simple range, e.g., "100>" means 100, 101, ..., 999
-    for (let i = startNum; i <= startNum + 100; i++) {
-      result.push(i.toString().padStart(3, "0"));
-    }
-  } else {
-    // Compound range, e.g., "100>120"
-    const endNum = parseInt(endDigits, 10);
-    if (isNaN(endNum) || endDigits.length !== 3) return [];
-    if (startNum > endNum) {
-      return []; // Indicate invalid range to be handled by caller
-    }
-    for (let i = startNum; i <= endNum; i++) {
-      result.push(i.toString().padStart(3, "0"));
-    }
+  if (startNum > endNum) {
+    return [];
   }
+  for (let i = startNum; i <= endNum; i++) {
+    result.push(i.toString().padStart(digit, "0"));
+  }
+
   return Array.from(new Set(result));
 };
 
@@ -307,7 +272,7 @@ function App() {
     // Using the isFinalInputValid function here
     if (!isFinalInputValid(input)) {
       message.error(
-        "Invalid number format. Please follow ##, ###, ##X, ##>, ###X, ###>, ###>###, or ##>##."
+        "Invalid number format. Please follow ##, ###, ##X, ###X, ##>, ###>, ###>###, ##>##, ###~###, or ##~##."
       );
       return;
     }
@@ -340,7 +305,6 @@ function App() {
     let syntaxType: "2D" | "3D";
     let combinedNumbers: string[] = [];
     let numberOfCombinations = 1;
-    let selectedRangeType: string | undefined = undefined; // Will store "Simple Range" or "start>end"
 
     // Check for 'X' suffix
     if (input.endsWith("X")) {
@@ -357,27 +321,19 @@ function App() {
       }
       numberOfCombinations = combinedNumbers.length;
     }
-    // Check for '>' suffix (simple or compound range)
-    else if (input.includes(">")) {
-      const parts = input.split(">");
+    // Check '~' suffix (simple or compound range)
+    else if (input.includes("~")) {
+      const separator = "~";
+      const parts = input.split(separator);
       const startDigits = parts[0];
-      const endDigits = parts[1] || undefined; // If no second part, it's a simple '>' range
+      const endDigits = parts[1]; // If no second part, it's a simple '>' or '~' range
 
-      if (startDigits.length === 2) {
+      if (startDigits.length === 2 && endDigits.length === 2) {
         syntaxType = "2D";
-        combinedNumbers = getTwoDigitRangeCombinations(startDigits, endDigits);
-        selectedRangeType = endDigits
-          ? `${startDigits}>${endDigits}`
-          : "Simple Range";
-      } else if (startDigits.length === 3) {
+        combinedNumbers = getRangeCombinations(startDigits, endDigits, 2);
+      } else if (startDigits.length === 3 && endDigits.length === 3) {
         syntaxType = "3D";
-        combinedNumbers = getThreeDigitRangeCombinations(
-          startDigits,
-          endDigits
-        );
-        selectedRangeType = endDigits
-          ? `${startDigits}>${endDigits}`
-          : "Simple Range";
+        combinedNumbers = getRangeCombinations(startDigits, endDigits, 3);
       } else {
         message.error("Invalid number format for range.");
         return;
@@ -385,7 +341,7 @@ function App() {
 
       if (combinedNumbers.length === 0) {
         message.error(
-          "Invalid range specified or start number is greater than end number."
+          "Invalid range specified or start number is greater than end number, or an invalid type of range for 2-digit numbers."
         );
         return;
       }
@@ -445,13 +401,12 @@ function App() {
         totalMultiplier: totalMultiplier, // Store the calculated total multiplier
         numberOfCombinations: numberOfCombinations,
         combinedNumbers: combinedNumbers, // Store the number of combinations
-        rangeType: selectedRangeType, // Store the selected type
       },
     ]);
 
     // Reset input fields and button states after successful entry
     setInput("");
-    // setAmountInput("");
+    // setAmountInput(""); // Uncomment if you want to clear amount after entry
     // setChannelsButtons((prev) =>
     //   prev.map((btn) => ({ ...btn, isActive: false }))
     // );
@@ -577,7 +532,7 @@ function App() {
         // record.value directly holds "12", "12X", "12>", "12>34"
         const displayNum = record.value;
 
-        // Only show tooltip if there are combinations (i.e., 'X' or '>' was used)
+        // Only show tooltip if there are combinations (i.e., 'X' or '>' or '~' was used)
         if (record.numberOfCombinations > 1) {
           return (
             <Tooltip

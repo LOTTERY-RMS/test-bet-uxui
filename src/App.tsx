@@ -278,31 +278,42 @@ const getThreeDigitMapRangeCombinations = (
     }
     // Case: First two digits match for start and end, and third digit also matches (e.g., 115>555)
     // This implies the first two digits iterate together (e.g., 11, 22, 33...) while the third digit remains constant.
-    else if (startD1 === startD2 && endD1 === endD2 && startD3 === endD3) {
+    else if (
+      startD3 === startD3 &&
+      startD2 !== endD2 &&
+      startD1 !== endD1 &&
+      startD1 === startD2 &&
+      endD1 === endD2
+    ) {
       for (let i = parseInt(startD1); i <= parseInt(endD1); i++) {
         result.push(`${i}${i}${startD3}`);
       }
     }
     // New Case: Fixed First Digit, Varying Second and Third (e.g., 511>566)
     // This pattern implies that the first digit is constant, while the second and third digits iterate simultaneously.
-    else if (startD1 === endD1 && startD2 !== endD2 && startD3 !== endD3) {
-      for (
-        let i = parseInt(startD2), j = parseInt(startD3);
-        i <= parseInt(endD2) && j <= parseInt(endD3);
-        i++, j++
-      ) {
-        result.push(`${startD1}${i}${j}`);
+    else if (
+      startD1 === endD1 &&
+      startD2 !== endD2 &&
+      startD3 !== endD3 &&
+      startD2 === startD3 &&
+      endD2 === endD3
+    ) {
+      console.log("here");
+      for (let i = parseInt(startD2); i <= parseInt(endD2); i++) {
+        result.push(`${startD1}${i}${i}`);
       }
     }
     // New Case: Fixed Second Digit, Varying First and Third (e.g., 151>555)
     // This pattern implies that the second digit is constant, while the first and third digits iterate simultaneously.
-    else if (startD2 === endD2 && startD1 !== endD1 && startD3 !== endD3) {
-      for (
-        let i = parseInt(startD1), j = parseInt(startD3);
-        i <= parseInt(endD1) && j <= parseInt(endD3);
-        i++, j++
-      ) {
-        result.push(`${i}${startD2}${j}`);
+    else if (
+      startD2 === endD2 &&
+      startD1 !== endD1 &&
+      startD3 !== endD3 &&
+      startD1 === startD3 &&
+      endD1 === endD3
+    ) {
+      for (let i = parseInt(startD1); i <= parseInt(endD1); i++) {
+        result.push(`${i}${startD2}${i}`);
       }
     }
     // General cases with two matching digits

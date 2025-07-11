@@ -36,7 +36,6 @@ body {
   .container {
     flex-wrap: wrap;
   }
-  .middle-controls-container,
   .entered-numbers-table,
   .calculator {
     flex-basis: 100%;
@@ -79,83 +78,6 @@ body {
   background-color: #3e8e41;
   transform: translateY(0);
   box-shadow: var(--shadow-light);
-}
-
-/* Middle section: Toggle controls */
-.middle-controls-container {
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: var(--shadow-heavy);
-  padding: 15px;
-  flex-basis: 220px;
-  flex-grow: 0;
-  flex-shrink: 0;
-  min-width: 220px;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.middle-controls-left-column,
-.middle-controls-right-column {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex-grow: 1;
-  flex-basis: 0;
-}
-
-.middle-controls-separator {
-  width: 1px;
-  background-color: #e0e0e0;
-  margin: 0 5px;
-  align-self: stretch;
-}
-
-.middle-control-button.ant-btn {
-  width: 100%;
-  height: 40px;
-  font-size: 1.1em;
-  border-radius: 8px;
-  border: 1px solid #d9d9d9;
-  color: #333;
-  background-color: #fff;
-  transition: all 0.2s ease-in-out;
-  box-shadow: none;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.middle-control-button.ant-btn:hover {
-  background-color: #f0f2f5;
-  border-color: #a6a6a6;
-  color: #333;
-  transform: none;
-  box-shadow: none;
-}
-
-.middle-control-button.ant-btn.active {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-  color: #ffffff;
-  box-shadow: var(--shadow-light);
-}
-
-.middle-control-button.ant-btn.active:hover {
-  background-color: var(--hover-color);
-  border-color: var(--hover-color);
-}
-
-.middle-control-button.ant-btn.active:active {
-  background-color: var(--active-color);
-  border-color: var(--active-color);
-}
-
-.middle-control-button.ant-btn.p-button {
-  height: calc((40px * 2) + 8px);
 }
 
 /* Table section */

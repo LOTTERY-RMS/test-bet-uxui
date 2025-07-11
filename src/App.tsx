@@ -13,6 +13,7 @@ import type { ColumnsType } from "antd/es/table";
 import "antd/dist/reset.css";
 import "./App.css";
 import CalculatorPad from "./components/CalculatorPad/CalculatorPad";
+import ChannelSelector from "./components/ChannelSelector/ChannelSelector";
 
 const { Option } = Select;
 
@@ -457,10 +458,11 @@ function App() {
     setAmountInput(parsedValue.toFixed(2));
   };
 
-  /** Handle Enter button click to validate inputs and add entry to the table.
-   * Validates number format, channels, amount, server, time, and currency.
-   * Calculates total amount based on multipliers and combinations.
-   * Resets input after successful entry.
+  /** Handles the Enter button click to validate and process user input.
+   * Validates the number format, selected channels, amount, server, time, and currency.
+   * Generates combinations (e.g., permutations for X, ranges for > or ~), calculates total amount using multipliers,
+   * adds the entry to the table, and resets the input field.
+   * Displays error messages for invalid inputs.
    */
   const handleEnterClick = () => {
     if (input.trim() === "") {
@@ -656,77 +658,6 @@ function App() {
     // setPButtons((prev) => prev.map((btn) => ({ ...btn, isActive: false })));
   };
 
-  /** Toggle a channel button and handle conflicts (e.g., Lo conflicts with A, B, C, D).
-   * Deactivates all P buttons when a channel button is clicked.
-   * @param clickedId The ID of the clicked channel button.
-   */
-  const handleChannelButtonClick = (clickedId: string) => {
-    setPButtons((prevPButtons) =>
-      prevPButtons.map((button) => ({ ...button, isActive: false }))
-    );
-    setChannelsButtons((prevChannelsButtons) => {
-      const clickedButton = prevChannelsButtons.find(
-        (button) => button.id === clickedId
-      );
-      if (!clickedButton) return prevChannelsButtons;
-
-      if (clickedButton.isActive) {
-        // Deactivate the clicked button
-        return prevChannelsButtons.map((button) =>
-          button.id === clickedId ? { ...button, isActive: false } : button
-        );
-      }
-
-      // Activate clicked button and deactivate conflicting buttons
-      const conflictsToDeactivate = clickedButton.conflictsWith || [];
-      return prevChannelsButtons.map((button) => {
-        if (button.id === clickedId) {
-          return { ...button, isActive: true };
-        } else if (conflictsToDeactivate.includes(button.id)) {
-          return { ...button, isActive: false };
-        }
-        return button;
-      });
-    });
-  };
-
-  /** Toggle a P button and activate its associated channels.
-   * Deactivates other P buttons and updates channel states.
-   * @param clickedId The ID of the clicked P button.
-   */
-  const handlePButtonClick = (clickedId: string) => {
-    setPButtons((prevPButtons) => {
-      const clickedPButton = prevPButtons.find(
-        (button) => button.id === clickedId
-      );
-      if (!clickedPButton) return prevPButtons;
-
-      if (clickedPButton.isActive) {
-        // Deactivate P button and all channels
-        setChannelsButtons((prevChannels) =>
-          prevChannels.map((channel) => ({ ...channel, isActive: false }))
-        );
-        return prevPButtons.map((button) => ({ ...button, isActive: false }));
-      }
-
-      // Activate clicked P button and its channels
-      const updatedPButtons = prevPButtons.map((button) => ({
-        ...button,
-        isActive: button.id === clickedId,
-      }));
-
-      const channelsToActivate = clickedPButton.channelsToActivate;
-      setChannelsButtons((prevChannels) =>
-        prevChannels.map((channel) => ({
-          ...channel,
-          isActive: channelsToActivate.includes(channel.id),
-        }))
-      );
-
-      return updatedPButtons;
-    });
-  };
-
   /** Handle server selection change and reset server time.
    * @param value The selected server ID.
    */
@@ -764,7 +695,7 @@ function App() {
       {
         title: "Entered Number",
         key: "value",
-        width: "18%",
+        width: "13%",
         render: (_text, record) =>
           record.numberOfCombinations > 1 ? (
             <Tooltip
@@ -786,20 +717,20 @@ function App() {
       {
         title: "Combinations List",
         key: "combinedNumbersList",
-        width: "40%",
+        width: "28%",
         render: (_text, record) => record.combinedNumbers?.join(", ") || "",
       },
       {
         title: "Syntax",
         dataIndex: "syntaxType",
         key: "syntaxType",
-        width: "9%",
+        width: "7%",
       },
       {
         title: "Currency",
         dataIndex: "currency",
         key: "currency",
-        width: "10%",
+        width: "7%",
       },
       {
         title: "Amount",
@@ -811,7 +742,7 @@ function App() {
         title: "Channels",
         dataIndex: "channels",
         key: "channels",
-        width: "23%",
+        width: "10%",
         render: (channelIds: string[], record) => {
           const channelLabels = channelIds
             .map(
@@ -850,7 +781,7 @@ function App() {
         title: "Total Amount",
         dataIndex: "totalAmount",
         key: "totalAmount",
-        width: "25%",
+        width: "10%",
       },
     ],
     [channelsButtons]
@@ -896,45 +827,17 @@ function App() {
                         {time.label}
                       </Option>
                     ))}
+                    elicit
                   </Select>
                 </div>
                 {/* Channel and P buttons container */}
-                <div className="middle-controls-container">
-                  <div className="middle-controls-left-column">
-                    {channelsButtons.map((button) => (
-                      <Button
-                        key={button.id}
-                        onClick={() => handleChannelButtonClick(button.id)}
-                        className={`middle-control-button ${
-                          button.isActive ? "active" : ""
-                        }`}
-                        disabled={!selectedServerTime}
-                        aria-label={`Channel ${button.label}`}
-                        aria-pressed={button.isActive}
-                      >
-                        {button.label} ({button.multipliers["2D"]},{" "}
-                        {button.multipliers["3D"]})
-                      </Button>
-                    ))}
-                  </div>
-                  <div className="middle-controls-separator"></div>
-                  <div className="middle-controls-right-column">
-                    {pButtons.map((button) => (
-                      <Button
-                        key={button.id}
-                        onClick={() => handlePButtonClick(button.id)}
-                        className={`middle-control-button p-button ${
-                          button.isActive ? "active" : ""
-                        }`}
-                        disabled={!selectedServerTime}
-                        aria-label={`P button ${button.label}`}
-                        aria-pressed={button.isActive}
-                      >
-                        {button.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+                <ChannelSelector
+                  channelsButtons={channelsButtons}
+                  pButtons={pButtons}
+                  setChannelsButtons={setChannelsButtons}
+                  setPButtons={setPButtons}
+                  selectedServerTime={selectedServerTime}
+                />
               </Col>
               <Col span={14}>
                 <CalculatorPad

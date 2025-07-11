@@ -279,7 +279,7 @@ const getThreeDigitMapRangeCombinations = (
     // Case: First two digits match for start and end, and third digit also matches (e.g., 115>555)
     // This implies the first two digits iterate together (e.g., 11, 22, 33...) while the third digit remains constant.
     else if (
-      startD3 === startD3 &&
+      startD3 === endD3 &&
       startD2 !== endD2 &&
       startD1 !== endD1 &&
       startD1 === startD2 &&
@@ -344,6 +344,109 @@ const getThreeDigitMapRangeCombinations = (
     }
   }
   // Remove any potential duplicates and return the array.
+  return Array.from(new Set(result));
+};
+
+/**
+ * Generates combinations for 3-digit numbers based on the '>' range.
+ * @param startDigits The starting number string (e.g., "123").
+ * @param endDigits The ending number string (optional, for ###>###).
+ * @returns An array of combined number strings.
+ */
+const getThreeDigitMapRangeCombinations2 = (
+  startDigits: string,
+  endDigits?: string
+): string[] => {
+  const result: string[] = [];
+
+  console.log("getThreeDigitMapRangeCombinations2");
+  // Validate startDigits: must be a 3-digit number
+  const startNum = parseInt(startDigits, 10);
+  if (isNaN(startNum) || startDigits.length !== 3) {
+    return [];
+  }
+
+  if (endDigits === undefined) {
+    // Simple range (e.g., "123>" → 123 to 132)
+    for (let i = startNum; i < startNum + 10; i++) {
+      result.push(i.toString().padStart(3, "0"));
+    }
+    return Array.from(new Set(result));
+  }
+
+  // Validate endDigits: must be a 3-digit number
+  const endNum = parseInt(endDigits, 10);
+  if (isNaN(endNum) || endDigits.length !== 3 || startNum > endNum) {
+    return [];
+  }
+
+  const startD1 = startDigits[0];
+  const startD2 = startDigits[1];
+  const startD3 = startDigits[2];
+  const endD1 = endDigits[0];
+  const endD2 = endDigits[1];
+  const endD3 = endDigits[2];
+
+  // Case 1: Repeating digits (e.g., 111>555 → 111, 222, 333, 444, 555)
+  if (
+    startD1 === startD2 &&
+    startD2 === startD3 &&
+    endD1 === endD2 &&
+    endD3 === endD1
+  ) {
+    for (let i = parseInt(startD1); i <= parseInt(endD1); i++) {
+      result.push(`${i}${i}${i}`);
+    }
+    return Array.from(new Set(result));
+  }
+
+  // Case 2: Identify fixed and varying digits
+  const fixedDigits: { [key: number]: string } = {};
+  const varyingIndices: number[] = [];
+
+  // Check which digits are fixed (same in start and end)
+  if (startD1 === endD1) fixedDigits[1] = startD1;
+  else varyingIndices.push(1);
+  if (startD2 === endD2) fixedDigits[2] = startD2;
+  else varyingIndices.push(2);
+  if (startD3 === endD3) fixedDigits[3] = startD3;
+  else varyingIndices.push(3);
+
+  // Handle cases based on the number of varying digits
+  if (varyingIndices.length === 1) {
+    // One digit varies (e.g., 111>115, 111>151, 111>511)
+    const varyingIndex = varyingIndices[0];
+    const startValue = parseInt(startDigits[varyingIndex - 1]);
+    const endValue = parseInt(endDigits[varyingIndex - 1]);
+    for (let i = startValue; i <= endValue; i++) {
+      const digits = [startD1, startD2, startD3];
+      digits[varyingIndex - 1] = i.toString();
+      result.push(digits.join(""));
+    }
+  } else if (varyingIndices.length === 2) {
+    // Two digits vary, and they must be equal (e.g., 511>566, 151>555)
+    const [idx1, idx2] = varyingIndices;
+    if (
+      startDigits[idx1 - 1] !== startDigits[idx2 - 1] ||
+      endDigits[idx1 - 1] !== endDigits[idx2 - 1]
+    ) {
+      return []; // Invalid if varying digits aren't equal in start and end
+    }
+    const startValue = parseInt(startDigits[idx1 - 1]);
+    const endValue = parseInt(endDigits[idx1 - 1]);
+    for (let i = startValue; i <= endValue; i++) {
+      const digits = [
+        fixedDigits[1] || i.toString(),
+        fixedDigits[2] || i.toString(),
+        fixedDigits[3] || i.toString(),
+      ];
+      result.push(digits.join(""));
+    }
+  } else {
+    // No valid pattern (three varying digits are not supported)
+    return [];
+  }
+
   return Array.from(new Set(result));
 };
 
@@ -524,7 +627,7 @@ function App() {
         );
       } else if (startDigits.length === 3) {
         syntaxType = "3D";
-        combinedNumbers = getThreeDigitMapRangeCombinations(
+        combinedNumbers = getThreeDigitMapRangeCombinations2(
           startDigits,
           endDigits
         );
@@ -535,7 +638,7 @@ function App() {
 
       if (combinedNumbers.length === 0) {
         message.error(
-          "Invalid range specified or start number is greater than end number, or an invalid type of range for 2-digit numbers."
+          "Invalid range specified or start number is greater than end number, or an invalid type of range for 2-digit/3-digit numbers."
         );
         return;
       }

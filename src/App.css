@@ -1,4 +1,13 @@
 /* src/App.css */
+:root {
+  --primary-color: #1890ff;
+  --hover-color: #40a9ff;
+  --active-color: #096dd9;
+  --shadow-light: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 6px 12px rgba(0, 0, 0, 0.15);
+  --shadow-heavy: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
 body {
   font-family: 'Arial', sans-serif;
   background-color: #f0f2f5;
@@ -13,16 +22,43 @@ body {
 
 .container {
   display: flex;
-  flex-direction: row; /* Ensure row direction */
-  gap: 20px; /* Space between the three main sections */
+  flex-direction: row;
+  gap: 20px;
   justify-content: center;
-  align-items: flex-start; /* Align items to the top */
-  flex-wrap: nowrap; /* Prevent wrapping initially */
-  max-width: 2000px; /* Increased max-width to comfortably fit three columns */
-  width: 100%; /* Ensure container fills available width up to max-width */
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  max-width: 2000px;
+  width: 100%;
 }
 
-/* Styling for the Enter button (kept global as it's not part of CalculatorPad's internal buttons) */
+/* Responsive design for smaller screens */
+@media (max-width: 1200px) {
+  .container {
+    flex-wrap: wrap;
+  }
+  .middle-controls-container,
+  .entered-numbers-table,
+  .calculator {
+    flex-basis: 100%;
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    align-items: center;
+  }
+  .ant-col {
+    width: 100%;
+  }
+  .antd-calc-button-enter.ant-btn {
+    font-size: 1.2em;
+    height: 50px;
+  }
+}
+
+/* Enter button styling */
 .antd-calc-button-enter.ant-btn {
   width: 100%;
   border-radius: 10px;
@@ -30,26 +66,26 @@ body {
   color: #ffffff;
   font-size: 1.5em;
   height: 60px;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-medium);
 }
 
 .antd-calc-button-enter.ant-btn:hover {
   background-color: #45a049;
   transform: translateY(-1px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-heavy);
 }
 
 .antd-calc-button-enter.ant-btn:active {
   background-color: #3e8e41;
   transform: translateY(0);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-light);
 }
 
-/* Middle Section: New Toggle Controls */
+/* Middle section: Toggle controls */
 .middle-controls-container {
   background-color: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-heavy);
   padding: 15px;
   flex-basis: 220px;
   flex-grow: 0;
@@ -101,34 +137,32 @@ body {
   box-shadow: none;
 }
 
-/* Active state for middle buttons */
 .middle-control-button.ant-btn.active {
-  background-color: #1890ff;
-  border-color: #1890ff;
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
   color: #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-light);
 }
 
 .middle-control-button.ant-btn.active:hover {
-  background-color: #40a9ff;
-  border-color: #40a9ff;
+  background-color: var(--hover-color);
+  border-color: var(--hover-color);
 }
 
 .middle-control-button.ant-btn.active:active {
-  background-color: #096dd9;
-  border-color: #096dd9;
+  background-color: var(--active-color);
+  border-color: var(--active-color);
 }
 
-/* Specific styling for the 'P' buttons (spanning 2 rows) */
 .middle-control-button.ant-btn.p-button {
   height: calc((40px * 2) + 8px);
 }
 
-/* Table - Right Section */
+/* Table section */
 .entered-numbers-table {
   background-color: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-heavy);
   padding: 20px;
   flex-basis: 300px;
   flex-grow: 1;

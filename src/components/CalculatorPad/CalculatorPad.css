@@ -1,10 +1,16 @@
 /* src/components/CalculatorPad/CalculatorPad.css */
+:root {
+  --shadow-light: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 6px 12px rgba(0, 0, 0, 0.15);
+  --shadow-heavy: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
 .calculator {
   background-color: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-heavy);
   padding: 20px;
-  flex-basis: 320px; /* Fixed width */
+  flex-basis: 320px;
   flex-grow: 0;
   flex-shrink: 0;
   min-width: 320px;
@@ -46,7 +52,6 @@
   align-items: center;
 }
 
-/* Styling for all calculator buttons */
 .antd-calc-button.ant-btn {
   width: 80px;
   height: 80px;
@@ -56,7 +61,7 @@
   justify-content: center;
   align-items: center;
   border: none;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-light);
   transition: all 0.2s ease-in-out;
   background-color: #f5f5f5;
   color: #333;
@@ -64,34 +69,34 @@
 
 .antd-calc-button.ant-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-medium);
   background-color: #e0e0e0;
 }
 
 .antd-calc-button.ant-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-light);
   background-color: #d0d0d0;
 }
 
 .antd-calc-button-clear.ant-btn {
   width: 100%;
   border-radius: 10px;
-  background-color: #ff4d4f; /* Example clear button color */
+  background-color: #ff4d4f;
   color: #ffffff;
   font-size: 1.5em;
   height: 60px;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-medium);
 }
 
 .antd-calc-button-clear.ant-btn:hover {
   background-color: #ff7875;
   transform: translateY(-1px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-heavy);
 }
 
 .antd-calc-button-clear.ant-btn:active {
   background-color: #d9363e;
   transform: translateY(0);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-light);
 }

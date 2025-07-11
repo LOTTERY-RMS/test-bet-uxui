@@ -2,6 +2,7 @@ import React, { useCallback } from "react";
 import { Button, Row, Col, App as AntApp } from "antd";
 import "./CalculatorPad.css";
 
+// Define valid input patterns for the calculator
 const VALID_FINAL_INPUT_PATTERNS = [
   /^\d{2}$/, // ## (e.g., 12)
   /^\d{3}$/, // ### (e.g., 123)
@@ -20,11 +21,24 @@ interface CalculatorPadProps {
   onInputChange: (newInput: string) => void;
 }
 
+/** CalculatorPad component for entering numbers and operators (0-9, X, >, ~, C, Del).
+ * Displays the current input and updates it based on button clicks.
+ * Uses memoization to prevent unnecessary re-renders.
+ */
 const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(
   ({ input, onInputChange }) => {
     const { message } = AntApp.useApp();
 
-    /** Checks if a potential input is a valid prefix for allowed patterns. */
+    /** Checks if a potential input is a valid prefix for allowed patterns.
+     * Allows intermediate states that could lead to a valid final pattern.
+     * @param potentialInput The input string to check (e.g., "12", "123>", "12~").
+     * @returns True if the input is a valid prefix, false otherwise.
+     * Examples:
+     * - isInputValidForPrefix("") → true (empty input)
+     * - isInputValidForPrefix("12") → true (partial 2-digit number)
+     * - isInputValidForPrefix("123>") → true (partial range)
+     * - isInputValidForPrefix("12X4") → false (invalid sequence)
+     */
     const isInputValidForPrefix = (potentialInput: string): boolean => {
       if (potentialInput === "") return true;
       if (/^\d{1,3}$/.test(potentialInput)) return true;
@@ -33,18 +47,36 @@ const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(
       return false;
     };
 
-    /** Checks if a final input string matches allowed patterns. */
+    /** Checks if a final input string matches allowed patterns.
+     * @param finalInput The input string to validate (e.g., "12X", "123>125").
+     * @returns True if the input matches a valid pattern, false otherwise.
+     * Examples:
+     * - isFinalInputValid("12X") → true
+     * - isFinalInputValid("123>125") → true
+     * - isFinalInputValid("12~15") → true
+     * - isFinalInputValid("1234") → false
+     */
     const isFinalInputValid = (finalInput: string): boolean => {
       return VALID_FINAL_INPUT_PATTERNS.some((regex) => regex.test(finalInput));
     };
 
-    /** Handles button clicks for numbers and operators, validating input. */
+    /** Handles button clicks for numbers and operators.
+     * Updates the input string based on valid patterns.
+     * @param char The character or action from the button (e.g., "1", "X", "C", "Del").
+     * Examples:
+     * - Clicking "1" on empty input → "1"
+     * - Clicking "X" after "12" → "12X"
+     * - Clicking "C" → Clears input to ""
+     * - Clicking "Del" on "123" → "12"
+     */
     const handleNumberClick = useCallback(
       (char: string) => {
         let currentInput = input;
         if (char === "C") {
+          // Clear the entire input
           currentInput = "";
         } else if (char === "Del") {
+          // Remove the last character
           currentInput = input.slice(0, -1);
         } else {
           const newPotentialInput = input + char;
@@ -52,8 +84,10 @@ const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(
             isInputValidForPrefix(newPotentialInput) ||
             isFinalInputValid(newPotentialInput)
           ) {
+            // Append character if it forms a valid prefix or final pattern
             currentInput = newPotentialInput;
           } else {
+            // Show error for invalid sequence
             const validFormats = [
               "## (e.g., 12)",
               "### (e.g., 123)",

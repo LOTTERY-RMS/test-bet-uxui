@@ -59,40 +59,84 @@ interface Server {
   times: ServerTime[];
 }
 
-/** Valid input patterns for number entry. */
+/** Valid input patterns for number entry. Supports 2D and 3D formats with operators X, >, and ~.
+ * Examples:
+ * - ##: "12" (single 2-digit number)
+ * - ###: "123" (single 3-digit number)
+ * - ##X: "12X" (permutations of 2 digits, e.g., ["12", "21"])
+ * - ###X: "123X" (permutations of 3 digits, e.g., ["123", "132", "213", "231", "312", "321"])
+ * - ##>: "10>" (range of 10 numbers, e.g., ["10", "11", ..., "19"])
+ * - ###>: "120>" (range of 10 numbers, e.g., ["120", "121", ..., "129"])
+ * - ##>##: "10>19" (specific 2-digit range, e.g., ["10", "11", ..., "19"])
+ * - ###>###: "120>129" (specific 3-digit range, e.g., ["120", "121", ..., "129"])
+ * - ##~##: "10~19" (simple 2-digit range, e.g., ["10", "11", ..., "19"])
+ * - ###~###: "120~129" (simple 3-digit range, e.g., ["120", "121", ..., "129"])
+ */
 const VALID_FINAL_INPUT_PATTERNS = [
   /^\d{2}$/, // ## (e.g., 12)
   /^\d{3}$/, // ### (e.g., 123)
   /^\d{2}X$/, // ##X (e.g., 12X)
   /^\d{3}X$/, // ###X (e.g., 123X)
-  /^\d{2}>$/, // ##> (e.g., 12>)
-  /^\d{3}>$/, // ###> (e.g., 123>)
-  /^\d{3}>\d{3}$/, // ###>### (e.g., 123>125)
-  /^\d{2}>\d{2}$/, // ##>## (e.g., 12>15)
-  /^\d{3}~\d{3}$/, // ###~### (e.g., 123~125)
-  /^\d{2}~\d{2}$/, // ##~## (e.g., 12~15)
+  /^\d{2}>$/, // ##> (e.g., 10>)
+  /^\d{3}>$/, // ###> (e.g., 120>)
+  /^\d{3}>\d{3}$/, // ###>### (e.g., 120>129)
+  /^\d{2}>\d{2}$/, // ##>## (e.g., 10>19)
+  /^\d{3}~\d{3}$/, // ###~### (e.g., 120~129)
+  /^\d{2}~\d{2}$/, // ##~## (e.g., 10~19)
 ];
 
-/** Validates if a string is a valid number of specified digit length. */
+/** Validates if a string is a valid number of specified digit length.
+ * @param str The string to validate (e.g., "10" for 2 digits, "120" for 3 digits).
+ * @param digitLength The expected number of digits (2 or 3).
+ * @returns True if the string is a valid number of the specified length, false otherwise.
+ * Examples:
+ * - isValidDigitString("12", 2) → true
+ * - isValidDigitString("123", 3) → true
+ * - isValidDigitString("123", 2) → false
+ * - isValidDigitString("ab", 2) → false
+ */
 const isValidDigitString = (str: string, digitLength: number): boolean => {
   const num = parseInt(str, 10);
   return !isNaN(num) && str.length === digitLength;
 };
 
-/** Checks if a final input string matches allowed patterns. */
+/** Checks if a final input string matches allowed patterns.
+ * @param finalInput The input string to validate (e.g., "10X", "120>129").
+ * @returns True if the input matches a valid pattern, false otherwise.
+ * Examples:
+ * - isFinalInputValid("12X") → true
+ * - isFinalInputValid("120>129") → true
+ * - isFinalInputValid("10~19") → true
+ * - isFinalInputValid("1234") → false
+ */
 const isFinalInputValid = (finalInput: string): boolean => {
   return VALID_FINAL_INPUT_PATTERNS.some((regex) => regex.test(finalInput));
 };
 
-/** Generates two-digit permutations (e.g., "12" → ["12", "21"]). */
+/** Generates permutations for a two-digit number.
+ * @param numStr The two-digit number string (e.g., "12").
+ * @returns Array of unique permutations. For "12" returns ["12", "21"], for "11" returns ["11"].
+ * Examples:
+ * - getTwoDigitPermutations("12") → ["12", "21"]
+ * - getTwoDigitPermutations("11") → ["11"]
+ * - getTwoDigitPermutations("123") → ["123"] (invalid input, returns unchanged)
+ */
 const getTwoDigitPermutations = (numStr: string): string[] => {
   if (numStr.length !== 2) return [numStr];
   const [d1, d2] = numStr.split("");
-  if (d1 === d2) return [numStr];
+  if (d1 === d2) return [numStr]; // No permutations for identical digits
   return [numStr, d2 + d1];
 };
 
-/** Generates three-digit permutations (e.g., "123" → ["123", "132", ...]). */
+/** Generates permutations for a three-digit number.
+ * @param numStr The three-digit number string (e.g., "123").
+ * @returns Array of unique permutations (e.g., ["123", "132", "213", "231", "312", "321"]).
+ * Examples:
+ * - getThreeDigitPermutations("123") → ["123", "132", "213", "231", "312", "321"]
+ * - getThreeDigitPermutations("112") → ["112", "121", "211"]
+ * - getThreeDigitPermutations("111") → ["111"]
+ * - getThreeDigitPermutations("12") → ["12"] (invalid input, returns unchanged)
+ */
 const getThreeDigitPermutations = (numStr: string): string[] => {
   if (numStr.length !== 3) return [numStr];
   const chars = numStr.split("");
@@ -109,10 +153,20 @@ const getThreeDigitPermutations = (numStr: string): string[] => {
     }
   };
   permute(chars);
-  return Array.from(new Set(result));
+  return Array.from(new Set(result)); // Ensure unique permutations
 };
 
-/** Generates combinations for 2D or 3D ranges (e.g., "12~15" → ["12", "13", "14", "15"]). */
+/** Generates combinations for a simple range of 2-digit or 3-digit numbers (using ~ operator).
+ * @param startDigits The starting number string (e.g., "10", "120").
+ * @param endDigits The ending number string (e.g., "19", "129").
+ * @param digit The number of digits (2 for 2D, 3 for 3D).
+ * @returns Array of numbers in the range, padded with leading zeros.
+ * Examples:
+ * - getRangeCombinations("10", "19", 2) → ["10", "11", ..., "19"]
+ * - getRangeCombinations("120", "129", 3) → ["120", "121", ..., "129"]
+ * - getRangeCombinations("19", "10", 2) → [] (invalid: start > end)
+ * - getRangeCombinations("10", "abc", 2) → [] (invalid: non-numeric)
+ */
 const getRangeCombinations = (
   startDigits: string,
   endDigits: string,
@@ -134,7 +188,17 @@ const getRangeCombinations = (
   return Array.from(new Set(result));
 };
 
-/** Generates two-digit range combinations (e.g., "12>" → ["12", ..., "21"]). */
+/** Generates combinations for a 2-digit range using the > operator.
+ * @param startDigits The starting 2-digit number (e.g., "10").
+ * @param endDigits The ending 2-digit number (optional, for ##>##, e.g., "19").
+ * @returns Array of numbers in the range, considering specific patterns.
+ * Examples:
+ * - getTwoDigitMapRangeCombinations("10") → ["10", "11", "12", ..., "19"] (10 sequential numbers)
+ * - getTwoDigitMapRangeCombinations("00", "99") → ["00", "11", "22", "33", "44", "55", "66", "77", "88", "99"] (repeating digits)
+ * - getTwoDigitMapRangeCombinations("10", "19") → ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19"] (same first digit)
+ * - getTwoDigitMapRangeCombinations("01", "91") → ["01", "11", "21", "31", "41", "51", "61", "71", "81", "91"] (same second digit)
+ * - getTwoDigitMapRangeCombinations("12", "23") → [] (invalid range)
+ */
 const getTwoDigitMapRangeCombinations = (
   startDigits: string,
   endDigits?: string
@@ -144,6 +208,7 @@ const getTwoDigitMapRangeCombinations = (
   const startNum = parseInt(startDigits, 10);
 
   if (endDigits === undefined) {
+    // Simple range: 10 sequential numbers (e.g., "10>" → ["10", "11", ..., "19"])
     for (let i = startNum; i < startNum + 10; i++) {
       result.push(i.toString().padStart(2, "0"));
     }
@@ -160,25 +225,43 @@ const getTwoDigitMapRangeCombinations = (
     const endD2 = endDigits[1];
 
     if (startD1 === startD2 && endD1 === endD2) {
+      // Case: Repeating digits (e.g., "00>99" → ["00", "11", "22", ..., "99"])
       for (let i = parseInt(startD1); i <= parseInt(endD1); i++) {
         result.push(`${i}${i}`);
       }
     } else if (startD1 === endD1) {
+      // Case: Same first digit (e.g., "10>19" → ["10", "11", ..., "19"])
       for (let i = startNum; i <= parseInt(endDigits, 10); i++) {
         result.push(i.toString().padStart(2, "0"));
       }
     } else if (startD2 === endD2) {
+      // Case: Same second digit (e.g., "01>91" → ["01", "11", ..., "91"])
       for (let i = parseInt(startD1); i <= parseInt(endD1); i++) {
         result.push(`${i}${startD2}`);
       }
     } else {
+      // Invalid range (e.g., "12>23")
       return [];
     }
   }
   return Array.from(new Set(result));
 };
 
-/** Generates three-digit range combinations (e.g., "123>" → ["123", ..., "132"]). */
+/** Generates combinations for a 3-digit range using the > operator.
+ * @param startDigits The starting 3-digit number (e.g., "120").
+ * @param endDigits The ending 3-digit number (optional, for ###>###, e.g., "129").
+ * @returns Array of numbers in the range, considering specific patterns.
+ * Examples:
+ * - getThreeDigitMapRangeCombinations("120") → ["120", "121", ..., "129"] (10 sequential numbers)
+ * - getThreeDigitMapRangeCombinations("000", "999") → ["000", "111", "222", "333", "444", "555", "666", "777", "888", "999"] (repeating digits)
+ * - getThreeDigitMapRangeCombinations("120", "129") → ["120", "121", "122", "123", "124", "125", "126", "127", "128", "129"] (same first two digits)
+ * - getThreeDigitMapRangeCombinations("101", "191") → ["101", "111", "121", "131", "141", "151", "161", "171", "181", "191"] (same first and third digits)
+ * - getThreeDigitMapRangeCombinations("110", "910") → ["110", "210", "310", "410", "510", "610", "710", "810", "910"] (same second and third digits)
+ * - getThreeDigitMapRangeCombinations("500", "599") → ["500", "511", "522", "533", "544", "555", "566", "577", "588", "599"] (same first digit, second and third equal)
+ * - getThreeDigitMapRangeCombinations("050", "959") → ["050", "151", "252", "353", "454", "555", "656", "757", "858", "959"] (same second digit, first and third equal)
+ * - getThreeDigitMapRangeCombinations("005", "995") → ["005", "115", "225", "335", "445", "555", "665", "775", "885", "995"] (same third digit, first and second equal)
+ * - getThreeDigitMapRangeCombinations("123", "456") → [] (invalid range)
+ */
 const getThreeDigitMapRangeCombinations = (
   startDigits: string,
   endDigits?: string
@@ -188,7 +271,7 @@ const getThreeDigitMapRangeCombinations = (
   const startNum = parseInt(startDigits, 10);
 
   if (endDigits === undefined) {
-    /** Simple range: Generates 10 sequential numbers (e.g., "123>" → "123" to "132"). */
+    // Simple range: Generates 10 sequential numbers (e.g., "120>" → ["120", "121", ..., "129"])
     for (let i = startNum; i < startNum + 10; i++) {
       result.push(i.toString().padStart(3, "0"));
     }
@@ -196,6 +279,7 @@ const getThreeDigitMapRangeCombinations = (
   }
 
   if (!isValidDigitString(endDigits, 3) || startNum > parseInt(endDigits, 10)) {
+    // Invalid: End digits not 3-digit or start > end (e.g., "120>119")
     return [];
   }
 
@@ -206,20 +290,19 @@ const getThreeDigitMapRangeCombinations = (
   const endD2 = endDigits[1];
   const endD3 = endDigits[2];
 
-  /** Repeating digits (e.g., "111>555" → ["111", "222", "333", "444", "555"]). */
   if (
     startD1 === startD2 &&
     startD2 === startD3 &&
     endD1 === endD2 &&
     endD2 === endD3
   ) {
+    // Case: Repeating digits (e.g., "000>999" → ["000", "111", ..., "999"])
     for (let i = parseInt(startD1); i <= parseInt(endD1); i++) {
       result.push(`${i}${i}${i}`);
     }
     return Array.from(new Set(result));
   }
 
-  /** Identify fixed and varying digits for compound ranges. */
   const fixedDigits: { [key: number]: string } = {};
   const varyingIndices: number[] = [];
   if (startD1 === endD1) fixedDigits[1] = startD1;
@@ -230,7 +313,10 @@ const getThreeDigitMapRangeCombinations = (
   else varyingIndices.push(3);
 
   if (varyingIndices.length === 1) {
-    /** One digit varies (e.g., "111>115" → ["111", "112", "113", "114", "115"]). */
+    // Case: One digit varies
+    // - First two fixed (e.g., "120>129" → ["120", "121", ..., "129"])
+    // - First and third fixed (e.g., "101>191" → ["101", "111", ..., "191"])
+    // - Second and third fixed (e.g., "110>910" → ["110", "210", ..., "910"])
     const varyingIndex = varyingIndices[0];
     const startValue = parseInt(startDigits[varyingIndex - 1]);
     const endValue = parseInt(endDigits[varyingIndex - 1]);
@@ -240,13 +326,16 @@ const getThreeDigitMapRangeCombinations = (
       result.push(digits.join(""));
     }
   } else if (varyingIndices.length === 2) {
-    /** Two digits vary and must be equal (e.g., "511>566" → ["511", "522", ..., "566"]). */
+    // Case: Two digits vary and must be equal
+    // - First fixed, second and third equal (e.g., "500>599" → ["500", "511", ..., "599"])
+    // - Second fixed, first and third equal (e.g., "050>959" → ["050", "151", ..., "959"])
+    // - Third fixed, first and second equal (e.g., "005>995" → ["005", "115", ..., "995"])
     const [idx1, idx2] = varyingIndices;
     if (
       startDigits[idx1 - 1] !== startDigits[idx2 - 1] ||
       endDigits[idx1 - 1] !== endDigits[idx2 - 1]
     ) {
-      return [];
+      return []; // Invalid if varying digits aren't equal
     }
     const startValue = parseInt(startDigits[idx1 - 1]);
     const endValue = parseInt(endDigits[idx1 - 1]);
@@ -259,7 +348,7 @@ const getThreeDigitMapRangeCombinations = (
       result.push(digits.join(""));
     }
   } else {
-    /** Invalid pattern: Three varying digits are not supported. */
+    // Invalid: Three varying digits not supported (e.g., "123>456")
     return [];
   }
 
@@ -302,12 +391,14 @@ function App() {
     }
   }, [message]);
 
-  /** Save enteredNumbers to localStorage on update. */
+  /** Save enteredNumbers to localStorage whenever it updates. */
   useEffect(() => {
     localStorage.setItem("enteredNumbers", JSON.stringify(enteredNumbers));
   }, [enteredNumbers]);
 
-  /** Update channels and P buttons when server time changes. */
+  /** Update channels and P buttons when server or server time changes.
+   * Resets active states to false to ensure a clean slate.
+   */
   useEffect(() => {
     if (selectedServer && selectedServerTime && servers.length > 0) {
       const server = servers.find((s) => s.id === selectedServer);
@@ -326,12 +417,19 @@ function App() {
     }
   }, [selectedServer, selectedServerTime, servers]);
 
-  /** Handle calculator input changes from CalculatorPad. */
+  /** Handle calculator input changes from CalculatorPad component.
+   * @param newInput The updated input string from the calculator.
+   */
   const handleCalculatorInputChange = useCallback((newInput: string) => {
     setInput(newInput);
   }, []);
 
-  /** Handle amount input changes, allowing only numbers and decimals. */
+  /** Handle changes in the amount input field, allowing only numbers and decimals.
+   * @param e The input event containing the new value.
+   * Examples:
+   * - Input "123.45" → Allowed
+   * - Input "abc" → Ignored
+   */
   const handleAmountInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (/^\d*\.?\d*$/.test(value) || value === "") {
@@ -339,7 +437,11 @@ function App() {
     }
   };
 
-  /** Format amount to two decimal places on blur. */
+  /** Format amount to two decimal places on blur or clear if invalid.
+   * Examples:
+   * - Input "123.4" → Sets to "123.40"
+   * - Input "abc" → Clears and shows error
+   */
   const handleAmountInputBlur = () => {
     const value = amountInput.trim();
     if (value === "") {
@@ -355,7 +457,11 @@ function App() {
     setAmountInput(parsedValue.toFixed(2));
   };
 
-  /** Handle Enter button click to validate and add entry to table. */
+  /** Handle Enter button click to validate inputs and add entry to the table.
+   * Validates number format, channels, amount, server, time, and currency.
+   * Calculates total amount based on multipliers and combinations.
+   * Resets input after successful entry.
+   */
   const handleEnterClick = () => {
     if (input.trim() === "") {
       message.error("Please enter a number before pressing Enter.");
@@ -372,16 +478,16 @@ function App() {
 
     if (!isFinalInputValid(input)) {
       const validFormats = [
-        "## (e.g., 12)",
-        "### (e.g., 123)",
-        "##X (e.g., 12X)",
-        "###X (e.g., 123X)",
-        "##> (e.g., 12>)",
-        "###> (e.g., 123>)",
-        "##>## (e.g., 12>15)",
-        "###>### (e.g., 123>125)",
-        "##~## (e.g., 12~15)",
-        "###~### (e.g., 123~125)",
+        "## (e.g., 10)",
+        "### (e.g., 120)",
+        "##X (e.g., 10X)",
+        "###X (e.g., 120X)",
+        "##> (e.g., 10>)",
+        "###> (e.g., 120>)",
+        "##>## (e.g., 10>19)",
+        "###>### (e.g., 120>129)",
+        "##~## (e.g., 10~19)",
+        "###~### (e.g., 120~129)",
       ];
       message.error(
         `Invalid number format. Supported formats: ${validFormats.join(", ")}.`
@@ -410,19 +516,23 @@ function App() {
     let numberOfCombinations = 1;
 
     if (input.endsWith("X")) {
+      // Handle permutation input with X operator
       const digitsPart = input.slice(0, -1);
       if (digitsPart.length === 2) {
         syntaxType = "2D";
         combinedNumbers = getTwoDigitPermutations(digitsPart);
+        // Example: "12X" → ["12", "21"]
       } else if (digitsPart.length === 3) {
         syntaxType = "3D";
         combinedNumbers = getThreeDigitPermutations(digitsPart);
+        // Example: "123X" → ["123", "132", "213", "231", "312", "321"]
       } else {
         message.error("Invalid number format for permutation.");
         return;
       }
       numberOfCombinations = combinedNumbers.length;
     } else if (input.includes(">")) {
+      // Handle range input with > operator
       const parts = input.split(">");
       const startDigits = parts[0];
       const endDigits = parts[1] || undefined;
@@ -433,12 +543,26 @@ function App() {
           startDigits,
           endDigits
         );
+        // Examples:
+        // - "10>" → ["10", "11", ..., "19"]
+        // - "00>99" → ["00", "11", ..., "99"]
+        // - "10>19" → ["10", "11", ..., "19"]
+        // - "01>91" → ["01", "11", ..., "91"]
       } else if (startDigits.length === 3) {
         syntaxType = "3D";
         combinedNumbers = getThreeDigitMapRangeCombinations(
           startDigits,
           endDigits
         );
+        // Examples:
+        // - "120>" → ["120", "121", ..., "129"]
+        // - "000>999" → ["000", "111", ..., "999"]
+        // - "120>129" → ["120", "121", ..., "129"]
+        // - "101>191" → ["101", "111", ..., "191"]
+        // - "110>910" → ["110", "210", ..., "910"]
+        // - "500>599" → ["500", "511", ..., "599"]
+        // - "050>959" → ["050", "151", ..., "959"]
+        // - "005>995" → ["005", "115", ..., "995"]
       } else {
         message.error("Invalid number format for range.");
         return;
@@ -452,13 +576,16 @@ function App() {
       }
       numberOfCombinations = combinedNumbers.length;
     } else if (input.includes("~")) {
+      // Handle simple range input with ~ operator
       const [startDigits, endDigits] = input.split("~");
       if (startDigits.length === 2 && endDigits.length === 2) {
         syntaxType = "2D";
         combinedNumbers = getRangeCombinations(startDigits, endDigits, 2);
+        // Example: "10~19" → ["10", "11", ..., "19"]
       } else if (startDigits.length === 3 && endDigits.length === 3) {
         syntaxType = "3D";
         combinedNumbers = getRangeCombinations(startDigits, endDigits, 3);
+        // Example: "120~129" → ["120", "121", ..., "129"]
       } else {
         message.error("Invalid number format for range.");
         return;
@@ -472,19 +599,23 @@ function App() {
       }
       numberOfCombinations = combinedNumbers.length;
     } else {
+      // Handle single number input
       const digitsPart = input;
       if (digitsPart.length === 2) {
         syntaxType = "2D";
         combinedNumbers = [digitsPart];
+        // Example: "10" → ["10"]
       } else if (digitsPart.length === 3) {
         syntaxType = "3D";
         combinedNumbers = [digitsPart];
+        // Example: "120" → ["120"]
       } else {
         message.error("Invalid number format based on digit count.");
         return;
       }
     }
 
+    // Calculate total multiplier from selected channels
     let totalMultiplier = 0;
     const displayChannelsArray: string[] = [];
     selectedActiveChannels.forEach((channel) => {
@@ -495,9 +626,11 @@ function App() {
       );
     });
 
+    // Calculate total amount: amount * totalMultiplier * numberOfCombinations
     const calculatedTotalAmount =
       parsedAmount * totalMultiplier * numberOfCombinations;
 
+    // Add new entry to the table
     setEnteredNumbers((prevNumbers) => [
       ...prevNumbers,
       {
@@ -515,6 +648,7 @@ function App() {
       },
     ]);
 
+    // Reset input after successful entry
     setInput("");
     // Optionally reset amount and channels:
     // setAmountInput("");
@@ -522,7 +656,10 @@ function App() {
     // setPButtons((prev) => prev.map((btn) => ({ ...btn, isActive: false })));
   };
 
-  /** Toggle channel button and handle conflicts. */
+  /** Toggle a channel button and handle conflicts (e.g., Lo conflicts with A, B, C, D).
+   * Deactivates all P buttons when a channel button is clicked.
+   * @param clickedId The ID of the clicked channel button.
+   */
   const handleChannelButtonClick = (clickedId: string) => {
     setPButtons((prevPButtons) =>
       prevPButtons.map((button) => ({ ...button, isActive: false }))
@@ -534,11 +671,13 @@ function App() {
       if (!clickedButton) return prevChannelsButtons;
 
       if (clickedButton.isActive) {
+        // Deactivate the clicked button
         return prevChannelsButtons.map((button) =>
           button.id === clickedId ? { ...button, isActive: false } : button
         );
       }
 
+      // Activate clicked button and deactivate conflicting buttons
       const conflictsToDeactivate = clickedButton.conflictsWith || [];
       return prevChannelsButtons.map((button) => {
         if (button.id === clickedId) {
@@ -551,7 +690,10 @@ function App() {
     });
   };
 
-  /** Toggle P button and activate associated channels. */
+  /** Toggle a P button and activate its associated channels.
+   * Deactivates other P buttons and updates channel states.
+   * @param clickedId The ID of the clicked P button.
+   */
   const handlePButtonClick = (clickedId: string) => {
     setPButtons((prevPButtons) => {
       const clickedPButton = prevPButtons.find(
@@ -560,12 +702,14 @@ function App() {
       if (!clickedPButton) return prevPButtons;
 
       if (clickedPButton.isActive) {
+        // Deactivate P button and all channels
         setChannelsButtons((prevChannels) =>
           prevChannels.map((channel) => ({ ...channel, isActive: false }))
         );
         return prevPButtons.map((button) => ({ ...button, isActive: false }));
       }
 
+      // Activate clicked P button and its channels
       const updatedPButtons = prevPButtons.map((button) => ({
         ...button,
         isActive: button.id === clickedId,
@@ -583,23 +727,31 @@ function App() {
     });
   };
 
-  /** Handle server selection change and reset server time. */
+  /** Handle server selection change and reset server time.
+   * @param value The selected server ID.
+   */
   const handleServerChange = (value: string) => {
     setSelectedServer(value);
     setSelectedServerTime(undefined);
   };
 
-  /** Handle server time selection change. */
+  /** Handle server time selection change.
+   * @param value The selected server time ID.
+   */
   const handleServerTimeChange = (value: string) => {
     setSelectedServerTime(value);
   };
 
-  /** Handle currency selection change. */
+  /** Handle currency selection change.
+   * @param value The selected currency (e.g., "USD", "KHR").
+   */
   const handleCurrencyChange = (value: string) => {
     setSelectedCurrency(value);
   };
 
-  /** Table columns for displaying entered numbers. */
+  /** Table columns for displaying entered numbers.
+   * Memoized to prevent unnecessary re-renders.
+   */
   const columns: ColumnsType<EnteredNumber> = useMemo(
     () => [
       {
@@ -607,7 +759,7 @@ function App() {
         dataIndex: "key",
         key: "key",
         render: (_text, _record, index) => index + 1,
-        width: "10%",
+        width: "5%",
       },
       {
         title: "Entered Number",
@@ -647,7 +799,7 @@ function App() {
         title: "Currency",
         dataIndex: "currency",
         key: "currency",
-        width: "15%",
+        width: "10%",
       },
       {
         title: "Amount",
@@ -688,7 +840,7 @@ function App() {
         title: "Multiplier",
         dataIndex: "totalMultiplier",
         key: "totalMultiplier",
-        width: "15%",
+        width: "10%",
         render: (_text, record) =>
           record.numberOfCombinations > 1
             ? `${record.numberOfCombinations} x ${record.totalMultiplier}`
@@ -704,6 +856,7 @@ function App() {
     [channelsButtons]
   );
 
+  // Get available server times based on selected server
   const availableServerTimes = selectedServer
     ? servers.find((s) => s.id === selectedServer)?.times || []
     : [];
@@ -715,6 +868,7 @@ function App() {
           <Col span={8}>
             <Row gutter={[10, 10]}>
               <Col span={10}>
+                {/* Server and Server Time selectors */}
                 <div style={{ marginBottom: "15px" }}>
                   <Select
                     placeholder="Select Server"
@@ -744,6 +898,7 @@ function App() {
                     ))}
                   </Select>
                 </div>
+                {/* Channel and P buttons container */}
                 <div className="middle-controls-container">
                   <div className="middle-controls-left-column">
                     {channelsButtons.map((button) => (
@@ -815,6 +970,7 @@ function App() {
                 </div>
               </Col>
             </Row>
+            {/* Enter button */}
             <Row style={{ marginTop: "15px" }}>
               <Col span={24}>
                 <Button

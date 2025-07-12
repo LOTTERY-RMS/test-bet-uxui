@@ -35,12 +35,12 @@ const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(({ input, onInput
    * - isValidXFrequency("1111") → false (1 appears 4 times, exceeds limit)
    * - isValidXFrequency("11222") → true (1 appears 2 times, 2 appears 3 times)
    */
-  const isValidXFrequency = (digitsPart: string): boolean => {
-    const digitCount: { [key: string]: number } = {};
-    for (const digit of digitsPart) {
-      digitCount[digit] = (digitCount[digit] || 0) + 1;
+  const isValidXFrequency = (digitSequence: string): boolean => {
+    const digitFrequency: { [key: string]: number } = {};
+    for (const digit of digitSequence) {
+      digitFrequency[digit] = (digitFrequency[digit] || 0) + 1;
     }
-    return Object.values(digitCount).every((count) => count <= 3);
+    return Object.values(digitFrequency).every((frequency) => frequency <= 3);
   };
 
   /** Checks if a potential input is a valid prefix for allowed patterns.
@@ -55,18 +55,18 @@ const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(({ input, onInput
    * - isInputValidForPrefix("1112") → true (variable-length digits)
    * - isInputValidForPrefix("1111") → false (frequency rule violation)
    */
-  const isInputValidForPrefix = (potentialInput: string): boolean => {
-    if (potentialInput === "") return true;
-    if (/^\d{1,}$/.test(potentialInput)) {
+  const isInputValidForPrefix = (testInput: string): boolean => {
+    if (testInput === "") return true;
+    if (/^\d{1,}$/.test(testInput)) {
       // For pure digit inputs, check frequency rules
-      return isValidXFrequency(potentialInput);
+      return isValidXFrequency(testInput);
     }
-    if (/^\d{2,}[X>~]$/.test(potentialInput)) {
+    if (/^\d{2,}[X>~]$/.test(testInput)) {
       // For inputs ending with operators, check frequency rules on digits part
-      const digitsPart = potentialInput.slice(0, -1);
-      return isValidXFrequency(digitsPart);
+      const digitSequence = testInput.slice(0, -1);
+      return isValidXFrequency(digitSequence);
     }
-    if (/^\d{2,}[>~]\d{0,3}$/.test(potentialInput)) return true;
+    if (/^\d{2,}[>~]\d{0,3}$/.test(testInput)) return true;
     return false;
   };
 
@@ -80,15 +80,15 @@ const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(({ input, onInput
    * - isFinalInputValid("1234") → false
    * - isFinalInputValid("1111X") → false (frequency rule violation)
    */
-  const isFinalInputValid = (finalInput: string): boolean => {
+  const isFinalInputValid = (completeInput: string): boolean => {
     // Check basic pattern first
-    const matchesPattern = VALID_FINAL_INPUT_PATTERNS.some((regex) => regex.test(finalInput));
+    const matchesPattern = VALID_FINAL_INPUT_PATTERNS.some((pattern) => pattern.test(completeInput));
     if (!matchesPattern) return false;
 
     // For X inputs, check frequency rules
-    if (finalInput.endsWith("X")) {
-      const digitsPart = finalInput.slice(0, -1);
-      return isValidXFrequency(digitsPart);
+    if (completeInput.endsWith("X")) {
+      const digitSequence = completeInput.slice(0, -1);
+      return isValidXFrequency(digitSequence);
     }
 
     return true;
@@ -104,19 +104,19 @@ const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(({ input, onInput
    * - Clicking "Del" on "123" → "12"
    */
   const handleNumberClick = useCallback(
-    (char: string) => {
-      let currentInput = input;
-      if (char === "C") {
+    (buttonValue: string) => {
+      let updatedInput = input;
+      if (buttonValue === "C") {
         // Clear the entire input
-        currentInput = "";
-      } else if (char === "Del") {
+        updatedInput = "";
+      } else if (buttonValue === "Del") {
         // Remove the last character
-        currentInput = input.slice(0, -1);
+        updatedInput = input.slice(0, -1);
       } else {
-        const newPotentialInput = input + char;
-        if (isInputValidForPrefix(newPotentialInput) || isFinalInputValid(newPotentialInput)) {
+        const candidateInput = input + buttonValue;
+        if (isInputValidForPrefix(candidateInput) || isFinalInputValid(candidateInput)) {
           // Append character if it forms a valid prefix or final pattern
-          currentInput = newPotentialInput;
+          updatedInput = candidateInput;
         } else {
           // Show error for invalid sequence
           const validFormats = [
@@ -137,7 +137,7 @@ const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(({ input, onInput
           return;
         }
       }
-      onInputChange(currentInput);
+      onInputChange(updatedInput);
     },
     [input, message, onInputChange]
   );

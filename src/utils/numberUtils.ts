@@ -1,25 +1,65 @@
 // Number utility functions for permutations, ranges, and validation
 
-/** Valid input patterns for number entry. Supports 2D, 3D, and extended formats with operators X, >, and ~. */
+/**
+ * Regular expressions for valid bet input patterns.
+ * Supports 2D, 3D, and extended formats with operators X, >, and ~.
+ *
+ * Examples of valid patterns:
+ *   "12"        // two digits
+ *   "123"       // three digits
+ *   "12X"       // two digits + X
+ *   "123X"      // three digits + X
+ *   "10>"       // two digits + '>'
+ *   "120>"      // three digits + '>'
+ *   "10>19"     // two digits > two digits
+ *   "120>129"   // three digits > three digits
+ *   "10~19"     // two digits ~ two digits
+ *   "120~129"   // three digits ~ three digits
+ */
 export const VALID_FINAL_INPUT_PATTERNS = [
-  /^\d{2}$/, // ## (e.g., 12)
-  /^\d{3}$/, // ### (e.g., 123)
-  /^\d{2,}X$/, // ##X, ###X, ####X, etc. (permutations with frequency rules)
-  /^\d{2}>$/, // ##> (e.g., 10>)
-  /^\d{3}>$/, // ###> (e.g., 120>)
-  /^\d{3}>\d{3}$/, // ###>### (e.g., 120>129)
-  /^\d{2}>\d{2}$/, // ##>## (e.g., 10>19)
-  /^\d{3}~\d{3}$/, // ###~### (e.g., 120~129)
-  /^\d{2}~\d{2}$/, // ##~## (e.g., 10~19)
+  /^\d{2}$/, // e.g., "12"
+  /^\d{3}$/, // e.g., "123"
+  /^\d{2,}X$/, // e.g., "12X", "123X", "1234X"
+  /^\d{2}>$/, // e.g., "10>"
+  /^\d{3}>$/, // e.g., "120>"
+  /^\d{3}>\d{3}$/, // e.g., "120>129"
+  /^\d{2}>\d{2}$/, // e.g., "10>19"
+  /^\d{3}~\d{3}$/, // e.g., "120~129"
+  /^\d{2}~\d{2}$/, // e.g., "10~19"
 ];
 
-/** Validates if a string is a valid number of specified digit length. */
+/**
+ * Checks if a string is a valid number of the specified length.
+ *
+ * @param {string} numericString - The string to check.
+ * @param {number} expectedLength - The required length.
+ * @returns {boolean} True if numericString is a number and has the exact length.
+ *
+ * @example isExactLengthNumericString("12", 2) // true
+ * @example isExactLengthNumericString("123", 2) // false
+ * @example isExactLengthNumericString("ab", 2) // false
+ * @example isExactLengthNumericString("01", 2) // true
+ */
 export const isExactLengthNumericString = (numericString: string, expectedLength: number): boolean => {
   const parsedNumber = parseInt(numericString, 10);
   return !isNaN(parsedNumber) && numericString.length === expectedLength;
 };
 
-/** Checks if a final input string matches allowed patterns and frequency rules. */
+/**
+ * Validates if a bet input string matches allowed patterns and, for 'X' patterns, checks digit frequency.
+ *
+ * @param {string} betInput - The input string to validate.
+ * @returns {boolean} True if input is valid.
+ *
+ * @example isSupportedBetInput("12") // true
+ * @example isSupportedBetInput("123X") // true
+ * @example isSupportedBetInput("1111X") // false (digit '1' appears 4 times)
+ * @example isSupportedBetInput("10>") // true
+ * @example isSupportedBetInput("10>19") // true
+ * @example isSupportedBetInput("10~19") // true
+ * @example isSupportedBetInput("1X") // false (not enough digits)
+ * @example isSupportedBetInput("abc") // false
+ */
 export const isSupportedBetInput = (betInput: string): boolean => {
   const matchesPattern = VALID_FINAL_INPUT_PATTERNS.some((pattern) => pattern.test(betInput));
   if (!matchesPattern) return false;
@@ -35,7 +75,19 @@ export const isSupportedBetInput = (betInput: string): boolean => {
   return true;
 };
 
-/** Generates unique 2D or 3D digit combinations/permutations. */
+/**
+ * Generates all unique permutations for 2D or 3D digit strings.
+ *
+ * @param {string} digitString - The string of digits to permute.
+ * @param {"2D"|"3D"} syntaxType - "2D" or "3D".
+ * @returns {string[]} Array of unique permutations.
+ *
+ * @example generateDigitPermutations("12", "2D") // ["12", "21"]
+ * @example generateDigitPermutations("11", "2D") // ["11"]
+ * @example generateDigitPermutations("123", "3D") // ["123", "132", "213", "231", "312", "321"]
+ * @example generateDigitPermutations("112", "3D") // ["112", "121", "211"]
+ * @example generateDigitPermutations("1", "2D") // ["1"]
+ */
 export function generateDigitPermutations(digitString: string, syntaxType: "2D" | "3D"): string[] {
   // syntaxType === "2D"
   if (syntaxType === "2D") {
@@ -62,7 +114,17 @@ export function generateDigitPermutations(digitString: string, syntaxType: "2D" 
   return Array.from(new Set(results));
 }
 
-/** Generates combinations for a simple range of 2-digit or 3-digit numbers (using ~ operator). */
+/**
+ * Generates all numbers in a simple range (using ~) for 2D or 3D numbers.
+ *
+ * @param {string} startNumber - Start of the range.
+ * @param {string} endNumber - End of the range.
+ * @param {number} digitLength - 2 or 3.
+ * @returns {string[]} Array of all numbers in the range, padded to digitLength.
+ *
+ * @example generateSimpleRangeCombinations("10", "12", 2) // ["10", "11", "12"]
+ * @example generateSimpleRangeCombinations("120", "122", 3) // ["120", "121", "122"]
+ */
 export const generateSimpleRangeCombinations = (startNumber: string, endNumber: string, digitLength: number): string[] => {
   if (!isExactLengthNumericString(startNumber, digitLength) || !isExactLengthNumericString(endNumber, digitLength)) {
     return [];
@@ -77,7 +139,20 @@ export const generateSimpleRangeCombinations = (startNumber: string, endNumber: 
   return Array.from(new Set(rangeCombinations));
 };
 
-/** Generates combinations for a 2-digit range using the > operator. */
+/**
+ * Generates combinations for a 2-digit range using the '>' operator.
+ * If endNumber is omitted, generates 10 consecutive numbers.
+ *
+ * @param {string} startNumber - Start of the range (2 digits).
+ * @param {string} [endNumber] - Optional end of the range (2 digits).
+ * @returns {string[]} Array of numbers in the range.
+ *
+ * @example generateMappedTwoDigitRangeCombinations("10") // ["10", "11", ..., "19"]
+ * @example generateMappedTwoDigitRangeCombinations("10", "19") // ["10", "11", ..., "19"]
+ * @example generateMappedTwoDigitRangeCombinations("11", "22") // ["11", "22"]
+ * @example generateMappedTwoDigitRangeCombinations("12", "15") // ["12", "13", "14", "15"]
+ * @example generateMappedTwoDigitRangeCombinations("99", "00") // []
+ */
 export const generateMappedTwoDigitRangeCombinations = (startNumber: string, endNumber?: string): string[] => {
   const rangeCombinations: string[] = [];
   if (!isExactLengthNumericString(startNumber, 2)) return [];
@@ -113,7 +188,19 @@ export const generateMappedTwoDigitRangeCombinations = (startNumber: string, end
   return Array.from(new Set(rangeCombinations));
 };
 
-/** Generates combinations for a 3-digit range using the > operator. */
+/**
+ * Generates combinations for a 3-digit range using the '>' operator.
+ * If endNumber is omitted, generates 10 consecutive numbers.
+ *
+ * @param {string} startNumber - Start of the range (3 digits).
+ * @param {string} [endNumber] - Optional end of the range (3 digits).
+ * @returns {string[]} Array of numbers in the range.
+ *
+ * @example generateMappedThreeDigitRangeCombinations("120") // ["120", "121", ..., "129"]
+ * @example generateMappedThreeDigitRangeCombinations("111", "113") // ["111", "112", "113"]
+ * @example generateMappedThreeDigitRangeCombinations("123", "125") // ["123", "124", "125"]
+ * @example generateMappedThreeDigitRangeCombinations("999", "000") // []
+ */
 export const generateMappedThreeDigitRangeCombinations = (startNumber: string, endNumber?: string): string[] => {
   const rangeCombinations: string[] = [];
   if (!isExactLengthNumericString(startNumber, 3)) return [];
@@ -172,6 +259,9 @@ export const generateMappedThreeDigitRangeCombinations = (startNumber: string, e
   return Array.from(new Set(rangeCombinations));
 };
 
+/**
+ * Result type for processInputNumber.
+ */
 export interface ProcessInputNumberResult {
   totalAmount: string;
   syntaxType: "2D" | "3D";
@@ -180,6 +270,31 @@ export interface ProcessInputNumberResult {
   combinedNumbers: string[];
 }
 
+/**
+ * Processes a bet input, validates it, generates all possible number combinations,
+ * and calculates the total amount based on selected channels and bet amount.
+ *
+ * @param {string} betInput - The bet input string (e.g., "12X", "120~122", "10>19").
+ * @param {Array} activeChannels - Array of channel objects with multipliers.
+ * @param {number} betAmount - The amount to bet.
+ * @returns {ProcessInputNumberResult|{error: string}} On success: result object. On error: { error }.
+ *
+ * @example
+ *   processInputNumber("12X", [{id: "A", label: "A", multipliers: {"2D": 2, "3D": 3}}], 10)
+ *   => { totalAmount: "40.00", syntaxType: "2D", channelMultiplierSum: 2, numberOfCombinations: 2, combinedNumbers: ["12", "21"] }
+ *
+ * @example
+ *   processInputNumber("120~122", [{id: "A", label: "A", multipliers: {"2D": 2, "3D": 3}}], 5)
+ *   => { totalAmount: "45.00", syntaxType: "3D", channelMultiplierSum: 3, numberOfCombinations: 3, combinedNumbers: ["120", "121", "122"] }
+ *
+ * @example
+ *   processInputNumber("", [], 10)
+ *   => { error: "Please enter a number before pressing Enter." }
+ *
+ * @example
+ *   processInputNumber("9999X", [{id: "A", label: "A", multipliers: {"2D": 2, "3D": 3}}], 10)
+ *   => { error: "Invalid number format. Supported formats: ..." }
+ */
 export function processInputNumber(
   betInput: string,
   activeChannels: { id: string; label: string; multipliers: { "2D": number; "3D": number } }[],

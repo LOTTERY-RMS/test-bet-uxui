@@ -1,14 +1,5 @@
 import { useCallback, useState, useEffect, useMemo } from "react";
-import {
-  Button,
-  Row,
-  Col,
-  Table,
-  Input,
-  App as AntApp,
-  Select,
-  Tooltip,
-} from "antd";
+import { Button, Row, Col, Table, Input, App as AntApp, Select, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import "antd/dist/reset.css";
 import "./App.css";
@@ -168,15 +159,8 @@ const getThreeDigitPermutations = (numStr: string): string[] => {
  * - getRangeCombinations("19", "10", 2) → [] (invalid: start > end)
  * - getRangeCombinations("10", "abc", 2) → [] (invalid: non-numeric)
  */
-const getRangeCombinations = (
-  startDigits: string,
-  endDigits: string,
-  digit: number
-): string[] => {
-  if (
-    !isValidDigitString(startDigits, digit) ||
-    !isValidDigitString(endDigits, digit)
-  ) {
+const getRangeCombinations = (startDigits: string, endDigits: string, digit: number): string[] => {
+  if (!isValidDigitString(startDigits, digit) || !isValidDigitString(endDigits, digit)) {
     return [];
   }
   const startNum = parseInt(startDigits, 10);
@@ -200,10 +184,7 @@ const getRangeCombinations = (
  * - getTwoDigitMapRangeCombinations("01", "91") → ["01", "11", "21", "31", "41", "51", "61", "71", "81", "91"] (same second digit)
  * - getTwoDigitMapRangeCombinations("12", "23") → [] (invalid range)
  */
-const getTwoDigitMapRangeCombinations = (
-  startDigits: string,
-  endDigits?: string
-): string[] => {
+const getTwoDigitMapRangeCombinations = (startDigits: string, endDigits?: string): string[] => {
   const result: string[] = [];
   if (!isValidDigitString(startDigits, 2)) return [];
   const startNum = parseInt(startDigits, 10);
@@ -214,10 +195,7 @@ const getTwoDigitMapRangeCombinations = (
       result.push(i.toString().padStart(2, "0"));
     }
   } else {
-    if (
-      !isValidDigitString(endDigits, 2) ||
-      startNum > parseInt(endDigits, 10)
-    ) {
+    if (!isValidDigitString(endDigits, 2) || startNum > parseInt(endDigits, 10)) {
       return [];
     }
     const startD1 = startDigits[0];
@@ -263,10 +241,7 @@ const getTwoDigitMapRangeCombinations = (
  * - getThreeDigitMapRangeCombinations("005", "995") → ["005", "115", "225", "335", "445", "555", "665", "775", "885", "995"] (same third digit, first and second equal)
  * - getThreeDigitMapRangeCombinations("123", "456") → [] (invalid range)
  */
-const getThreeDigitMapRangeCombinations = (
-  startDigits: string,
-  endDigits?: string
-): string[] => {
+const getThreeDigitMapRangeCombinations = (startDigits: string, endDigits?: string): string[] => {
   const result: string[] = [];
   if (!isValidDigitString(startDigits, 3)) return [];
   const startNum = parseInt(startDigits, 10);
@@ -291,12 +266,7 @@ const getThreeDigitMapRangeCombinations = (
   const endD2 = endDigits[1];
   const endD3 = endDigits[2];
 
-  if (
-    startD1 === startD2 &&
-    startD2 === startD3 &&
-    endD1 === endD2 &&
-    endD2 === endD3
-  ) {
+  if (startD1 === startD2 && startD2 === startD3 && endD1 === endD2 && endD2 === endD3) {
     // Case: Repeating digits (e.g., "000>999" → ["000", "111", ..., "999"])
     for (let i = parseInt(startD1); i <= parseInt(endD1); i++) {
       result.push(`${i}${i}${i}`);
@@ -332,20 +302,13 @@ const getThreeDigitMapRangeCombinations = (
     // - Second fixed, first and third equal (e.g., "050>959" → ["050", "151", ..., "959"])
     // - Third fixed, first and second equal (e.g., "005>995" → ["005", "115", ..., "995"])
     const [idx1, idx2] = varyingIndices;
-    if (
-      startDigits[idx1 - 1] !== startDigits[idx2 - 1] ||
-      endDigits[idx1 - 1] !== endDigits[idx2 - 1]
-    ) {
+    if (startDigits[idx1 - 1] !== startDigits[idx2 - 1] || endDigits[idx1 - 1] !== endDigits[idx2 - 1]) {
       return []; // Invalid if varying digits aren't equal
     }
     const startValue = parseInt(startDigits[idx1 - 1]);
     const endValue = parseInt(endDigits[idx1 - 1]);
     for (let i = startValue; i <= endValue; i++) {
-      const digits = [
-        fixedDigits[1] || i.toString(),
-        fixedDigits[2] || i.toString(),
-        fixedDigits[3] || i.toString(),
-      ];
+      const digits = [fixedDigits[1] || i.toString(), fixedDigits[2] || i.toString(), fixedDigits[3] || i.toString()];
       result.push(digits.join(""));
     }
   } else {
@@ -360,12 +323,8 @@ function App() {
   const [input, setInput] = useState<string>("");
   const [enteredNumbers, setEnteredNumbers] = useState<EnteredNumber[]>([]);
   const [amountInput, setAmountInput] = useState<string>("");
-  const [selectedServer, setSelectedServer] = useState<string | undefined>(
-    undefined
-  );
-  const [selectedServerTime, setSelectedServerTime] = useState<
-    string | undefined
-  >(undefined);
+  const [selectedServer, setSelectedServer] = useState<string | undefined>(undefined);
+  const [selectedServerTime, setSelectedServerTime] = useState<string | undefined>(undefined);
   const [selectedCurrency, setSelectedCurrency] = useState<string>("USD");
   const [channelsButtons, setChannelsButtons] = useState<ChannelButton[]>([]);
   const [pButtons, setPButtons] = useState<PButton[]>([]);
@@ -377,14 +336,11 @@ function App() {
   useEffect(() => {
     fetch("data/servers.json")
       .then((response) => {
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         return response.json();
       })
       .then((data) => setServers(data))
-      .catch((error) =>
-        message.error("Failed to load server data: " + error.message)
-      );
+      .catch((error) => message.error("Failed to load server data: " + error.message));
 
     const savedNumbers = localStorage.getItem("enteredNumbers");
     if (savedNumbers) {
@@ -405,12 +361,8 @@ function App() {
       const server = servers.find((s) => s.id === selectedServer);
       const time = server?.times.find((t) => t.id === selectedServerTime);
       if (time) {
-        setChannelsButtons(
-          time.channels.map((channel) => ({ ...channel, isActive: false }))
-        );
-        setPButtons(
-          time.pButtons.map((pBtn) => ({ ...pBtn, isActive: false }))
-        );
+        setChannelsButtons(time.channels.map((channel) => ({ ...channel, isActive: false })));
+        setPButtons(time.pButtons.map((pBtn) => ({ ...pBtn, isActive: false })));
       }
     } else {
       setChannelsButtons([]);
@@ -470,9 +422,7 @@ function App() {
       return;
     }
 
-    const selectedActiveChannels = channelsButtons.filter(
-      (button) => button.isActive
-    );
+    const selectedActiveChannels = channelsButtons.filter((button) => button.isActive);
     if (selectedActiveChannels.length === 0) {
       message.error("Please select at least one channel (e.g., A, B, C, Lo).");
       return;
@@ -491,9 +441,7 @@ function App() {
         "##~## (e.g., 10~19)",
         "###~### (e.g., 120~129)",
       ];
-      message.error(
-        `Invalid number format. Supported formats: ${validFormats.join(", ")}.`
-      );
+      message.error(`Invalid number format. Supported formats: ${validFormats.join(", ")}.`);
       return;
     }
 
@@ -541,10 +489,7 @@ function App() {
 
       if (startDigits.length === 2) {
         syntaxType = "2D";
-        combinedNumbers = getTwoDigitMapRangeCombinations(
-          startDigits,
-          endDigits
-        );
+        combinedNumbers = getTwoDigitMapRangeCombinations(startDigits, endDigits);
         // Examples:
         // - "10>" → ["10", "11", ..., "19"]
         // - "00>99" → ["00", "11", ..., "99"]
@@ -552,10 +497,7 @@ function App() {
         // - "01>91" → ["01", "11", ..., "91"]
       } else if (startDigits.length === 3) {
         syntaxType = "3D";
-        combinedNumbers = getThreeDigitMapRangeCombinations(
-          startDigits,
-          endDigits
-        );
+        combinedNumbers = getThreeDigitMapRangeCombinations(startDigits, endDigits);
         // Examples:
         // - "120>" → ["120", "121", ..., "129"]
         // - "000>999" → ["000", "111", ..., "999"]
@@ -571,9 +513,7 @@ function App() {
       }
 
       if (combinedNumbers.length === 0) {
-        message.error(
-          "Invalid range: start number must not exceed end number."
-        );
+        message.error("Invalid range: start number must not exceed end number.");
         return;
       }
       numberOfCombinations = combinedNumbers.length;
@@ -594,9 +534,7 @@ function App() {
       }
 
       if (combinedNumbers.length === 0) {
-        message.error(
-          "Invalid range: start number must not exceed end number."
-        );
+        message.error("Invalid range: start number must not exceed end number.");
         return;
       }
       numberOfCombinations = combinedNumbers.length;
@@ -623,14 +561,11 @@ function App() {
     selectedActiveChannels.forEach((channel) => {
       const multiplier = channel.multipliers[syntaxType];
       totalMultiplier += multiplier;
-      displayChannelsArray.push(
-        `${channel.label} (${syntaxType}x${multiplier})`
-      );
+      displayChannelsArray.push(`${channel.label} (${syntaxType}x${multiplier})`);
     });
 
     // Calculate total amount: amount * totalMultiplier * numberOfCombinations
-    const calculatedTotalAmount =
-      parsedAmount * totalMultiplier * numberOfCombinations;
+    const calculatedTotalAmount = parsedAmount * totalMultiplier * numberOfCombinations;
 
     // Add new entry to the table
     setEnteredNumbers((prevNumbers) => [
@@ -698,17 +633,9 @@ function App() {
         width: "13%",
         render: (_text, record) =>
           record.numberOfCombinations > 1 ? (
-            <Tooltip
-              title={
-                <div style={{ whiteSpace: "pre-line" }}>
-                  {record.combinedNumbers.join(", ")}
-                </div>
-              }
-            >
+            <Tooltip title={<div style={{ whiteSpace: "pre-line" }}>{record.combinedNumbers.join(", ")}</div>}>
               <span>{record.value} </span>
-              <span style={{ color: "#1890ff" }}>
-                ({record.numberOfCombinations})
-              </span>
+              <span style={{ color: "#1890ff" }}>({record.numberOfCombinations})</span>
             </Tooltip>
           ) : (
             <span>{record.value}</span>
@@ -744,25 +671,11 @@ function App() {
         key: "channels",
         width: "10%",
         render: (channelIds: string[], record) => {
-          const channelLabels = channelIds
-            .map(
-              (channelId) =>
-                channelsButtons.find((c) => c.id === channelId)?.label ||
-                channelId
-            )
-            .join(", ");
+          const channelLabels = channelIds.map((channelId) => channelsButtons.find((c) => c.id === channelId)?.label || channelId).join(", ");
           return (
-            <Tooltip
-              title={
-                <div style={{ whiteSpace: "pre-line" }}>
-                  {record.displayChannels.join("\n")}
-                </div>
-              }
-            >
+            <Tooltip title={<div style={{ whiteSpace: "pre-line" }}>{record.displayChannels.join("\n")}</div>}>
               <span>{channelLabels} </span>
-              <span style={{ color: "#1890ff" }}>
-                ({record.totalMultiplier})
-              </span>
+              <span style={{ color: "#1890ff" }}>({record.totalMultiplier})</span>
             </Tooltip>
           );
         },
@@ -772,10 +685,7 @@ function App() {
         dataIndex: "totalMultiplier",
         key: "totalMultiplier",
         width: "10%",
-        render: (_text, record) =>
-          record.numberOfCombinations > 1
-            ? `${record.numberOfCombinations} x ${record.totalMultiplier}`
-            : record.totalMultiplier,
+        render: (_text, record) => (record.numberOfCombinations > 1 ? `${record.numberOfCombinations} x ${record.totalMultiplier}` : record.totalMultiplier),
       },
       {
         title: "Total Amount",
@@ -788,9 +698,7 @@ function App() {
   );
 
   // Get available server times based on selected server
-  const availableServerTimes = selectedServer
-    ? servers.find((s) => s.id === selectedServer)?.times || []
-    : [];
+  const availableServerTimes = selectedServer ? servers.find((s) => s.id === selectedServer)?.times || [] : [];
 
   return (
     <AntApp>
@@ -801,13 +709,7 @@ function App() {
               <Col span={10}>
                 {/* Server and Server Time selectors */}
                 <div style={{ marginBottom: "15px" }}>
-                  <Select
-                    placeholder="Select Server"
-                    style={{ width: "100%", marginBottom: "10px" }}
-                    onChange={handleServerChange}
-                    value={selectedServer}
-                    aria-label="Server selection"
-                  >
+                  <Select placeholder="Select Server" style={{ width: "100%", marginBottom: "10px" }} onChange={handleServerChange} value={selectedServer} aria-label="Server selection">
                     {servers.map((server) => (
                       <Option key={server.id} value={server.id}>
                         {server.label}
@@ -831,19 +733,10 @@ function App() {
                   </Select>
                 </div>
                 {/* Channel and P buttons container */}
-                <ChannelSelector
-                  channelsButtons={channelsButtons}
-                  pButtons={pButtons}
-                  setChannelsButtons={setChannelsButtons}
-                  setPButtons={setPButtons}
-                  selectedServerTime={selectedServerTime}
-                />
+                <ChannelSelector channelsButtons={channelsButtons} pButtons={pButtons} setChannelsButtons={setChannelsButtons} setPButtons={setPButtons} selectedServerTime={selectedServerTime} />
               </Col>
               <Col span={14}>
-                <CalculatorPad
-                  input={input}
-                  onInputChange={handleCalculatorInputChange}
-                />
+                <CalculatorPad input={input} onInputChange={handleCalculatorInputChange} />
                 <div style={{ marginTop: "15px" }}>
                   <Row>
                     <Col span={19}>
@@ -858,13 +751,7 @@ function App() {
                       />
                     </Col>
                     <Col span={5}>
-                      <Select
-                        placeholder="Select Currency"
-                        style={{ width: "100%", marginLeft: "5px" }}
-                        onChange={handleCurrencyChange}
-                        value={selectedCurrency}
-                        aria-label="Currency selection"
-                      >
+                      <Select placeholder="Select Currency" style={{ width: "100%", marginLeft: "5px" }} onChange={handleCurrencyChange} value={selectedCurrency} aria-label="Currency selection">
                         <Option value="USD">USD</Option>
                         <Option value="KHR">KHR</Option>
                       </Select>
@@ -876,13 +763,7 @@ function App() {
             {/* Enter button */}
             <Row style={{ marginTop: "15px" }}>
               <Col span={24}>
-                <Button
-                  onClick={handleEnterClick}
-                  className="antd-calc-button-enter"
-                  block
-                  disabled={!selectedServerTime}
-                  aria-label="Submit entry"
-                >
+                <Button onClick={handleEnterClick} className="antd-calc-button-enter" block disabled={!selectedServerTime} aria-label="Submit entry">
                   Enter
                 </Button>
               </Col>
@@ -891,14 +772,7 @@ function App() {
           <Col span={16}>
             <div className="entered-numbers-table">
               <h2>Entered Data</h2>
-              <Table
-                dataSource={enteredNumbers}
-                columns={columns}
-                pagination={false}
-                size="small"
-                scroll={{ y: 700 }}
-                aria-label="Entered numbers table"
-              />
+              <Table dataSource={enteredNumbers} columns={columns} pagination={false} size="small" scroll={{ y: 700 }} aria-label="Entered numbers table" />
             </div>
           </Col>
         </Row>

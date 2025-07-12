@@ -18,7 +18,8 @@ export async function setupTestDatabase() {
       syntax_type TEXT NOT NULL,
       expected_count INTEGER NOT NULL,
       expected_values TEXT[] NOT NULL,
-      description TEXT
+      description TEXT,
+      remark TEXT
     )
   `);
   return pool;
@@ -34,19 +35,24 @@ export async function insertTestCases(
     expected_count: number;
     expected_values: string[];
     description: string;
+    remark?: string;
   }>
 ) {
   await pool.query("TRUNCATE TABLE number_utils_test_cases");
   for (const testCase of testCases) {
-    await pool.query("INSERT INTO number_utils_test_cases (start_number, end_number, sign, syntax_type, expected_count, expected_values, description) VALUES ($1, $2, $3, $4, $5, $6, $7)", [
-      testCase.start_number || null,
-      testCase.end_number || null,
-      testCase.sign,
-      testCase.syntax_type,
-      testCase.expected_count,
-      testCase.expected_values,
-      testCase.description,
-    ]);
+    await pool.query(
+      "INSERT INTO number_utils_test_cases (start_number, end_number, sign, syntax_type, expected_count, expected_values, description, remark) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+      [
+        testCase.start_number || null,
+        testCase.end_number || null,
+        testCase.sign,
+        testCase.syntax_type,
+        testCase.expected_count,
+        testCase.expected_values,
+        testCase.description,
+        testCase.remark || null,
+      ]
+    );
   }
 }
 
@@ -59,6 +65,7 @@ export async function getTestCases(pool: Pool): Promise<
     expected_count: number;
     expected_values: string[];
     description: string;
+    remark?: string;
   }>
 > {
   console.log("Getting test cases");

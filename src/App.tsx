@@ -248,17 +248,15 @@ function App() {
         width: "28%",
         render: (_text, record) => {
           const combinations = record.combinedNumbers || [];
-          if (combinations.length <= 100) {
+          if (combinations.length <= 10) {
             return combinations.join(", ");
           } else {
             const firstThree = combinations.slice(0, 4).join(", ");
             const lastThree = combinations.slice(-4).join(", ");
             return (
-              <Tooltip title={<div style={{ whiteSpace: "pre-line" }}>{combinations.join(", ")}</div>}>
-                <span>
-                  {firstThree}, ... , {lastThree}
-                </span>
-              </Tooltip>
+              <span>
+                {firstThree}, ... , {lastThree}
+              </span>
             );
           }
         },

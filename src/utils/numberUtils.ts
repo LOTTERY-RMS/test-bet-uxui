@@ -36,8 +36,8 @@ export const VALID_FINAL_INPUT_PATTERNS = [
  * - isExactLengthNumericString("ab", 2) → false
  */
 export const isExactLengthNumericString = (str: string, digitLength: number): boolean => {
-  const num = parseInt(str, 10);
-  return !isNaN(num) && str.length === digitLength;
+  // Check that the string is exactly the right length and contains only digits
+  return str.length === digitLength && /^\d+$/.test(str);
 };
 
 /** Checks if a final input string matches allowed patterns and frequency rules.
@@ -76,35 +76,40 @@ export const isSupportedBetInput = (betInput: string): boolean => {
  * - generateDigitPermutations("112", "3D") → ["112", "121", "211"]
  */
 export function generateDigitPermutations(digitString: string, syntaxType: "2D" | "3D"): string[] {
+  // Validate that the input contains only digits (for both 2D and 3D)
+  if (!/^\d+$/.test(digitString)) return [];
+
   // Handle 2D case: only two digits
   if (syntaxType === "2D") {
     if (digitString.length !== 2) return [];
-    const [a, b] = digitString; // Destructure the two digits
-    // If both digits are the same, only one permutation exists
-    // Otherwise, return both the original and its reverse
+    const [a, b] = digitString;
     return a === b ? [digitString] : [digitString, b + a];
   }
-  // Handle 3D case:
-  if (digitString.length < 3) return [];
-  const digits = digitString.split(""); // Split the string into an array of digits
-  const results: string[] = [];
 
-  // Recursive helper to generate all permutations
-  const permutate = (arr: string[], memo: string[] = []) => {
-    // If we've built a 3-digit permutation, join and add to results
-    if (memo.length === 3) {
-      results.push(memo.join(""));
-      return;
-    }
-    // Try each remaining digit in the current position
-    for (let i = 0; i < arr.length; i++) {
-      const cur = arr.splice(i, 1)[0]; // Remove digit at index i
-      permutate(arr, memo.concat(cur)); // Recurse with the chosen digit added to the memo
-      arr.splice(i, 0, cur); // Restore digit (backtrack)
-    }
-  };
-  permutate(digits); // Start permutation with all digits
-  return Array.from(new Set(results));
+  // Handle 3D case: any digit string of length 3 or more
+  if (syntaxType === "3D") {
+    if (digitString.length < 3 || digitString.length > 16) return [];
+    const digits = digitString.split(""); // Split the string into an array of digits
+    const results: string[] = [];
+    const permutate = (arr: string[], memo: string[] = []) => {
+      // If we've built a 3-digit permutation, join and add to results
+      if (memo.length === 3) {
+        results.push(memo.join(""));
+        return;
+      }
+      // Try each remaining digit in the current position
+      for (let i = 0; i < arr.length; i++) {
+        const cur = arr.splice(i, 1)[0]; // Remove digit at index i
+        permutate(arr, memo.concat(cur)); // Recurse with the chosen digit added to the memo
+        arr.splice(i, 0, cur); // Restore digit (backtrack)
+      }
+    };
+    permutate(digits); // Start permutation with all digits
+    return Array.from(new Set(results));
+  }
+
+  // Invalid syntax type
+  return [];
 }
 
 /** Generates combinations for a simple range of 2-digit or 3-digit numbers (using ~ operator).
@@ -119,6 +124,11 @@ export function generateDigitPermutations(digitString: string, syntaxType: "2D" 
  * - generateSimpleRangeCombinations("10", "abc", "2D") → [] (invalid: non-numeric)
  */
 export const generateSimpleRangeCombinations = (startNumber: string, endNumber: string, syntaxType: "2D" | "3D"): string[] => {
+  // Validate syntax type
+  if (syntaxType !== "2D" && syntaxType !== "3D") {
+    return [];
+  }
+
   const digitLength = syntaxType === "2D" ? 2 : 3;
   if (!isExactLengthNumericString(startNumber, digitLength) || !isExactLengthNumericString(endNumber, digitLength)) {
     return [];
@@ -126,6 +136,7 @@ export const generateSimpleRangeCombinations = (startNumber: string, endNumber: 
   const startValue = parseInt(startNumber, 10);
   const endValue = parseInt(endNumber, 10);
   if (startValue > endValue) return [];
+
   const rangeCombinations: string[] = [];
   for (let i = startValue; i <= endValue; i++) {
     rangeCombinations.push(i.toString().padStart(digitLength, "0"));
@@ -215,7 +226,7 @@ export const generateMappedTwoDigitRangeCombinations = (startNumber: string, end
  * - generateMappedThreeDigitRangeCombinations("120") → ["120", "121", ..., "129"]
  * - generateMappedThreeDigitRangeCombinations("000", "999") → ["000", "111", ..., "999"]
  * - generateMappedThreeDigitRangeCombinations("120", "129") → ["120", "121", ..., "129"]
- * - generateMappedThreeDigitRangeCombinations("101", "191") → ["101", "111", ..., "191"]
+ * - generateMappedThreeDigitRangeCombinations("103", "193") → ["103", "113", ..., "193"]
  * - generateMappedThreeDigitRangeCombinations("110", "910") → ["110", "210", ..., "910"]
  * - generateMappedThreeDigitRangeCombinations("500", "599") → ["500", "501", ..., "599"]
  * - generateMappedThreeDigitRangeCombinations("050", "959") → [] (invalid range)

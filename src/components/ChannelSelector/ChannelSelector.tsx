@@ -32,32 +32,20 @@ interface ChannelSelectorProps {
  * @param setPButtons Function to update P buttons state.
  * @param selectedServerTime The selected server time ID, used to enable/disable buttons.
  */
-const ChannelSelector: React.FC<ChannelSelectorProps> = ({
-  channelsButtons,
-  pButtons,
-  setChannelsButtons,
-  setPButtons,
-  selectedServerTime,
-}) => {
+const ChannelSelector: React.FC<ChannelSelectorProps> = ({ channelsButtons, pButtons, setChannelsButtons, setPButtons, selectedServerTime }) => {
   /** Toggle a channel button and handle conflicts (e.g., Lo conflicts with A, B, C, D).
    * Deactivates all P buttons when a channel button is clicked.
    * @param clickedId The ID of the clicked channel button.
    */
   const handleChannelButtonClick = (clickedId: string) => {
-    setPButtons((prevPButtons) =>
-      prevPButtons.map((button) => ({ ...button, isActive: false }))
-    );
+    setPButtons((prevPButtons) => prevPButtons.map((button) => ({ ...button, isActive: false })));
     setChannelsButtons((prevChannelsButtons) => {
-      const clickedButton = prevChannelsButtons.find(
-        (button) => button.id === clickedId
-      );
+      const clickedButton = prevChannelsButtons.find((button) => button.id === clickedId);
       if (!clickedButton) return prevChannelsButtons;
 
       if (clickedButton.isActive) {
         // Deactivate the clicked button
-        return prevChannelsButtons.map((button) =>
-          button.id === clickedId ? { ...button, isActive: false } : button
-        );
+        return prevChannelsButtons.map((button) => (button.id === clickedId ? { ...button, isActive: false } : button));
       }
 
       // Activate clicked button and deactivate conflicting buttons
@@ -79,16 +67,12 @@ const ChannelSelector: React.FC<ChannelSelectorProps> = ({
    */
   const handlePButtonClick = (clickedId: string) => {
     setPButtons((prevPButtons) => {
-      const clickedPButton = prevPButtons.find(
-        (button) => button.id === clickedId
-      );
+      const clickedPButton = prevPButtons.find((button) => button.id === clickedId);
       if (!clickedPButton) return prevPButtons;
 
       if (clickedPButton.isActive) {
         // Deactivate P button and all channels
-        setChannelsButtons((prevChannels) =>
-          prevChannels.map((channel) => ({ ...channel, isActive: false }))
-        );
+        setChannelsButtons((prevChannels) => prevChannels.map((channel) => ({ ...channel, isActive: false })));
         return prevPButtons.map((button) => ({ ...button, isActive: false }));
       }
 
@@ -117,15 +101,12 @@ const ChannelSelector: React.FC<ChannelSelectorProps> = ({
           <Button
             key={button.id}
             onClick={() => handleChannelButtonClick(button.id)}
-            className={`middle-control-button ${
-              button.isActive ? "active" : ""
-            }`}
+            className={`middle-control-button ${button.isActive ? "active" : ""}`}
             disabled={!selectedServerTime}
             aria-label={`Channel ${button.label}`}
             aria-pressed={button.isActive}
           >
-            {button.label} ({button.multipliers["2D"]},{" "}
-            {button.multipliers["3D"]})
+            {button.label} ({button.multipliers["2D"]}, {button.multipliers["3D"]})
           </Button>
         ))}
       </div>
@@ -135,9 +116,7 @@ const ChannelSelector: React.FC<ChannelSelectorProps> = ({
           <Button
             key={button.id}
             onClick={() => handlePButtonClick(button.id)}
-            className={`middle-control-button p-button ${
-              button.isActive ? "active" : ""
-            }`}
+            className={`middle-control-button p-button ${button.isActive ? "active" : ""}`}
             disabled={!selectedServerTime}
             aria-label={`P button ${button.label}`}
             aria-pressed={button.isActive}

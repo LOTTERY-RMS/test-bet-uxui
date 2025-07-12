@@ -51,12 +51,14 @@ interface Server {
   times: ServerTime[];
 }
 
-/** Valid input patterns for number entry. Supports 2D and 3D formats with operators X, >, and ~.
+/** Valid input patterns for number entry. Supports 2D, 3D, and longer formats with operators X, >, and ~.
  * Examples:
  * - ##: "12" (single 2-digit number)
  * - ###: "123" (single 3-digit number)
  * - ##X: "12X" (permutations of 2 digits, e.g., ["12", "21"])
  * - ###X: "123X" (permutations of 3 digits, e.g., ["123", "132", "213", "231", "312", "321"])
+ * - ####X: "1234X" (permutations of 4 digits, e.g., ["1234", "1243", "1324", ...])
+ * - #####X: "12345X" (permutations of 5 digits, e.g., ["12345", "12354", "12435", ...])
  * - ##>: "10>" (range of 10 numbers, e.g., ["10", "11", ..., "19"])
  * - ###>: "120>" (range of 10 numbers, e.g., ["120", "121", ..., "129"])
  * - ##>##: "10>19" (specific 2-digit range, e.g., ["10", "11", ..., "19"])
@@ -236,9 +238,9 @@ const getTwoDigitMapRangeCombinations = (startDigits: string, endDigits?: string
  * - getThreeDigitMapRangeCombinations("120", "129") → ["120", "121", "122", "123", "124", "125", "126", "127", "128", "129"] (same first two digits)
  * - getThreeDigitMapRangeCombinations("101", "191") → ["101", "111", "121", "131", "141", "151", "161", "171", "181", "191"] (same first and third digits)
  * - getThreeDigitMapRangeCombinations("110", "910") → ["110", "210", "310", "410", "510", "610", "710", "810", "910"] (same second and third digits)
- * - getThreeDigitMapRangeCombinations("500", "599") → ["500", "511", "522", "533", "544", "555", "566", "577", "588", "599"] (same first digit, second and third equal)
- * - getThreeDigitMapRangeCombinations("050", "959") → ["050", "151", "252", "353", "454", "555", "656", "757", "858", "959"] (same second digit, first and third equal)
- * - getThreeDigitMapRangeCombinations("005", "995") → ["005", "115", "225", "335", "445", "555", "665", "775", "885", "995"] (same third digit, first and second equal)
+ * - getThreeDigitMapRangeCombinations("500", "599") → ["500", "501", "502", ..., "599"] (100 sequential numbers)
+ * - getThreeDigitMapRangeCombinations("050", "959") → [] (invalid)
+ * - getThreeDigitMapRangeCombinations("005", "995") → [] (invalid)
  * - getThreeDigitMapRangeCombinations("123", "456") → [] (invalid range)
  */
 const getThreeDigitMapRangeCombinations = (startDigits: string, endDigits?: string): string[] => {
@@ -297,19 +299,22 @@ const getThreeDigitMapRangeCombinations = (startDigits: string, endDigits?: stri
       result.push(digits.join(""));
     }
   } else if (varyingIndices.length === 2) {
-    // Case: Two digits vary and must be equal
-    // - First fixed, second and third equal (e.g., "500>599" → ["500", "511", ..., "599"])
-    // - Second fixed, first and third equal (e.g., "050>959" → ["050", "151", ..., "959"])
-    // - Third fixed, first and second equal (e.g., "005>995" → ["005", "115", ..., "995"])
-    const [idx1, idx2] = varyingIndices;
-    if (startDigits[idx1 - 1] !== startDigits[idx2 - 1] || endDigits[idx1 - 1] !== endDigits[idx2 - 1]) {
-      return []; // Invalid if varying digits aren't equal
-    }
-    const startValue = parseInt(startDigits[idx1 - 1]);
-    const endValue = parseInt(endDigits[idx1 - 1]);
-    for (let i = startValue; i <= endValue; i++) {
-      const digits = [fixedDigits[1] || i.toString(), fixedDigits[2] || i.toString(), fixedDigits[3] || i.toString()];
-      result.push(digits.join(""));
+    // Case: Two digits vary - generate sequential range
+    // - First fixed, second and third vary (e.g., "500>599" → ["500", "501", ..., "599"])
+    // - Second fixed, first and third vary (e.g., "050>959" → invalid)
+    // - Third fixed, first and second vary (e.g., "005>995" → invalid)
+
+    // Only allow when first digit is fixed and second/third digits vary
+    if (fixedDigits[1] && !fixedDigits[2] && !fixedDigits[3]) {
+      // Case: First digit fixed, second and third vary (e.g., "500>599")
+      const startValue = parseInt(startDigits);
+      const endValue = parseInt(endDigits);
+      for (let i = startValue; i <= endValue; i++) {
+        result.push(i.toString().padStart(3, "0"));
+      }
+    } else {
+      // Invalid: Other combinations like "050>959" or "005>995" are not supported
+      return [];
     }
   } else {
     // Invalid: Three varying digits not supported (e.g., "123>456")
@@ -504,9 +509,9 @@ function App() {
         // - "120>129" → ["120", "121", ..., "129"]
         // - "101>191" → ["101", "111", ..., "191"]
         // - "110>910" → ["110", "210", ..., "910"]
-        // - "500>599" → ["500", "511", ..., "599"]
-        // - "050>959" → ["050", "151", ..., "959"]
-        // - "005>995" → ["005", "115", ..., "995"]
+        // - "500>599" → ["500", "501", ..., "599"] (100 numbers)
+        // - "050>959" → invalid
+        // - "005>995" → invalid
       } else {
         message.error("Invalid number format for range.");
         return;

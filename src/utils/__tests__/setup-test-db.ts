@@ -11,32 +11,58 @@ const pool = new Pool({
 export async function setupTestDatabase() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS number_utils_test_cases (
-      key TEXT NOT NULL,
-      number TEXT NOT NULL,
-      PRIMARY KEY (key, number)
+      id SERIAL PRIMARY KEY,
+      start_number TEXT,
+      end_number TEXT,
+      sign TEXT,
+      syntax_type TEXT NOT NULL,
+      expected_count INTEGER NOT NULL,
+      expected_values TEXT[] NOT NULL,
+      description TEXT
     )
   `);
   return pool;
 }
 
-export async function insertTestCases(pool: Pool, testCases: Array<{ key: string; values: string[] }>) {
+export async function insertTestCases(
+  pool: Pool,
+  testCases: Array<{
+    start_number?: string;
+    end_number?: string | undefined;
+    sign: string;
+    syntax_type: "2D" | "3D";
+    expected_count: number;
+    expected_values: string[];
+    description: string;
+  }>
+) {
   await pool.query("TRUNCATE TABLE number_utils_test_cases");
   for (const testCase of testCases) {
-    for (const value of testCase.values) {
-      await pool.query("INSERT INTO number_utils_test_cases (key, number) VALUES ($1, $2)", [testCase.key, value]);
-    }
+    await pool.query("INSERT INTO number_utils_test_cases (start_number, end_number, sign, syntax_type, expected_count, expected_values, description) VALUES ($1, $2, $3, $4, $5, $6, $7)", [
+      testCase.start_number || null,
+      testCase.end_number || null,
+      testCase.sign,
+      testCase.syntax_type,
+      testCase.expected_count,
+      testCase.expected_values,
+      testCase.description,
+    ]);
   }
 }
 
-export async function getTestCases(pool: Pool): Promise<Record<string, { count: number; values: string[] }>> {
+export async function getTestCases(pool: Pool): Promise<
+  Array<{
+    start_number?: string;
+    end_number?: string;
+    sign: string;
+    syntax_type: "2D" | "3D";
+    expected_count: number;
+    expected_values: string[];
+    description: string;
+  }>
+> {
   console.log("Getting test cases");
-  const { rows } = await pool.query("SELECT key, number FROM number_utils_test_cases ORDER BY key, number");
-  const testCases: Record<string, { count: number; values: string[] }> = {};
-  for (const row of rows) {
-    if (!testCases[row.key]) testCases[row.key] = { count: 0, values: [] };
-    testCases[row.key].values.push(row.number);
-    testCases[row.key].count = testCases[row.key].values.length;
-  }
-  console.log(testCases);
-  return testCases;
+  const { rows } = await pool.query("SELECT * FROM number_utils_test_cases ORDER BY id");
+  console.log(`Found ${rows.length} test cases`);
+  return rows;
 }

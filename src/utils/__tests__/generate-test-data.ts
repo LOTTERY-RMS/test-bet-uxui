@@ -1,66 +1,143 @@
 import { setupTestDatabase, insertTestCases } from "./setup-test-db";
 
-import { generateMappedTwoDigitRangeCombinations, generateMappedThreeDigitRangeCombinations, generateDigitPermutations } from "../numberUtils.ts";
+import { generateMappedTwoDigitRangeCombinations, generateMappedThreeDigitRangeCombinations, generateDigitPermutations, generateSimpleRangeCombinations } from "../numberUtils.ts";
 
 const testCaseDefinitions = [
-  { key: "01>04", func: () => generateMappedTwoDigitRangeCombinations("01", "04") },
-  { key: "05>09", func: () => generateMappedTwoDigitRangeCombinations("05", "09") },
-  { key: "51>91", func: () => generateMappedTwoDigitRangeCombinations("51", "91") },
-  { key: "10>19", func: () => generateMappedTwoDigitRangeCombinations("10", "19") },
-  { key: "01>91", func: () => generateMappedTwoDigitRangeCombinations("01", "91") },
-  { key: "000>999", func: () => generateMappedThreeDigitRangeCombinations("000", "999") },
-  { key: "100>109", func: () => generateMappedThreeDigitRangeCombinations("100", "109") },
-  { key: "120>129", func: () => generateMappedThreeDigitRangeCombinations("120", "129") },
-  { key: "100>199", func: () => generateMappedThreeDigitRangeCombinations("100", "199") },
-  { key: "200>299", func: () => generateMappedThreeDigitRangeCombinations("200", "299") },
-  { key: "300>399", func: () => generateMappedThreeDigitRangeCombinations("300", "399") },
-  { key: "400>499", func: () => generateMappedThreeDigitRangeCombinations("400", "499") },
-  { key: "401>491", func: () => generateMappedThreeDigitRangeCombinations("401", "491") },
-  { key: "500>599", func: () => generateMappedThreeDigitRangeCombinations("500", "599") },
-  { key: "600>699", func: () => generateMappedThreeDigitRangeCombinations("600", "699") },
-  { key: "700>799", func: () => generateMappedThreeDigitRangeCombinations("700", "799") },
-  { key: "800>899", func: () => generateMappedThreeDigitRangeCombinations("800", "899") },
-  { key: "900>999", func: () => generateMappedThreeDigitRangeCombinations("900", "999") },
-  { key: "12X", func: () => generateDigitPermutations("12", "2D") },
-  { key: "112X", func: () => generateDigitPermutations("112", "3D") },
-  { key: "123X", func: () => generateDigitPermutations("123", "3D") },
-  { key: "1112X", func: () => generateDigitPermutations("1112", "3D") },
-  { key: "1122X", func: () => generateDigitPermutations("1122", "3D") },
-  { key: "1123X", func: () => generateDigitPermutations("1123", "3D") },
-  { key: "1234X", func: () => generateDigitPermutations("1234", "3D") },
-  { key: "11122X", func: () => generateDigitPermutations("11122", "3D") },
-  { key: "11123X", func: () => generateDigitPermutations("11123", "3D") },
-  { key: "11223X", func: () => generateDigitPermutations("11223", "3D") },
-  { key: "11234X", func: () => generateDigitPermutations("11234", "3D") },
-  { key: "12345X", func: () => generateDigitPermutations("12345", "3D") },
-  { key: "111222X", func: () => generateDigitPermutations("111222", "3D") },
-  { key: "111223X", func: () => generateDigitPermutations("111223", "3D") },
-  { key: "112233X", func: () => generateDigitPermutations("112233", "3D") },
-  { key: "111234X", func: () => generateDigitPermutations("111234", "3D") },
-  { key: "112234X", func: () => generateDigitPermutations("112234", "3D") },
-  { key: "112345X", func: () => generateDigitPermutations("112345", "3D") },
-  { key: "123456X", func: () => generateDigitPermutations("123456", "3D") },
-  { key: "1234567X", func: () => generateDigitPermutations("1234567", "3D") },
-  { key: "12345678X", func: () => generateDigitPermutations("12345678", "3D") },
-  { key: "123456789X", func: () => generateDigitPermutations("123456789", "3D") },
+  // // =====================
+  // // Single number cases
+  // // =====================
+  // { start_number: "12", sign: "", syntax_type: "2D" as const },
+  // { start_number: "99", sign: "", syntax_type: "2D" as const },
+  // { start_number: "00", sign: "", syntax_type: "2D" as const },
+  // { start_number: "123", sign: "", syntax_type: "3D" as const },
+  // { start_number: "999", sign: "", syntax_type: "3D" as const },
+  // { start_number: "000", sign: "", syntax_type: "3D" as const },
+  // // =====================
+  // // X permutation cases
+  // // =====================
+  // // 2D X
+  // { start_number: "12", sign: "X", syntax_type: "2D" as const },
+  // { start_number: "11", sign: "X", syntax_type: "2D" as const },
+  // { start_number: "99", sign: "X", syntax_type: "2D" as const },
+  // // 3D X
+  // { start_number: "111", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "112", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "123", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "1112", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "1122", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "1123", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "1234", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "11122", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "11123", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "11223", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "11234", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "12345", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "111222", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "111223", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "112233", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "111234", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "112234", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "112345", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "123456", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "1234567", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "12345678", sign: "X", syntax_type: "3D" as const },
+  // { start_number: "123456789", sign: "X", syntax_type: "3D" as const },
+  // // =====================
+  // // Mapped two digit range cases (> operator)
+  // // =====================
+  // { start_number: "01", end_number: "04", sign: ">", syntax_type: "2D" as const },
+  // { start_number: "05", end_number: "09", sign: ">", syntax_type: "2D" as const },
+  // { start_number: "51", end_number: "91", sign: ">", syntax_type: "2D" as const },
+  // { start_number: "10", end_number: "19", sign: ">", syntax_type: "2D" as const },
+  // { start_number: "01", end_number: "91", sign: ">", syntax_type: "2D" as const },
+  // { start_number: "00", end_number: "05", sign: ">", syntax_type: "2D" as const },
+  // { start_number: "11", end_number: "22", sign: ">", syntax_type: "2D" as const },
+  // // =====================
+  // // Mapped three digit range cases (> operator)
+  // // =====================
+  // { start_number: "000", end_number: "999", sign: ">", syntax_type: "3D" as const },
+  // { start_number: "100", end_number: "109", sign: ">", syntax_type: "3D" as const },
+  // { start_number: "120", end_number: "129", sign: ">", syntax_type: "3D" as const },
+  // { start_number: "100", end_number: "199", sign: ">", syntax_type: "3D" as const },
+  // { start_number: "401", end_number: "491", sign: ">", syntax_type: "3D" as const },
+  // { start_number: "055", end_number: "955", sign: ">", syntax_type: "3D" as const },
+  // { start_number: "054", end_number: "954", sign: ">", syntax_type: "3D" as const },
+  // { start_number: "540", end_number: "544", sign: ">", syntax_type: "3D" as const },
+  // { start_number: "545", end_number: "549", sign: ">", syntax_type: "3D" as const },
+  // { start_number: "111", end_number: "333", sign: ">", syntax_type: "3D" as const },
+  // { start_number: "101", end_number: "191", sign: ">", syntax_type: "3D" as const },
+  // { start_number: "210", end_number: "910", sign: ">", syntax_type: "3D" as const },
+  // { start_number: "100", end_number: "105", sign: ">", syntax_type: "3D" as const },
+  // // =====================
+  // // Simple range cases (~ operator)
+  // // =====================
+  // // 2D ~
+  // { start_number: "01", end_number: "05", sign: "~", syntax_type: "2D" as const },
+  // { start_number: "10", end_number: "19", sign: "~", syntax_type: "2D" as const },
+  // { start_number: "00", end_number: "05", sign: "~", syntax_type: "2D" as const },
+  // // 3D ~
+  // { start_number: "100", end_number: "105", sign: "~", syntax_type: "3D" as const },
+  // { start_number: "120", end_number: "129", sign: "~", syntax_type: "3D" as const },
+  // { start_number: "120", end_number: "125", sign: "~", syntax_type: "3D" as const },
 ];
 
 async function generateTestData() {
   const pool = await setupTestDatabase();
   const testCases = [];
+
   for (const testCase of testCaseDefinitions) {
     try {
-      const values = testCase.func();
-      console.log(`Generated ${values.length} values for ${testCase.key}`);
-      testCases.push({ key: testCase.key, values });
+      let expected_values: string[] = [];
+      let expected_count = 0;
+
+      if (testCase.sign === ">") {
+        if (testCase.syntax_type === "2D") {
+          expected_values = generateMappedTwoDigitRangeCombinations(testCase.start_number!, testCase.end_number);
+        } else {
+          expected_values = generateMappedThreeDigitRangeCombinations(testCase.start_number!, testCase.end_number);
+        }
+      } else if (testCase.sign === "~") {
+        expected_values = generateSimpleRangeCombinations(testCase.start_number!, testCase.end_number!, testCase.syntax_type);
+      } else if (testCase.sign === "X") {
+        expected_values = generateDigitPermutations(testCase.start_number!, testCase.syntax_type);
+      } else if (testCase.sign === "") {
+        expected_values = [testCase.start_number!];
+      }
+
+      expected_count = expected_values.length;
+
+      // Generate dynamic description
+      let description = "";
+      if (testCase.sign === ">") {
+        description = `${testCase.start_number}>${testCase.end_number} (${expected_count})`;
+      } else if (testCase.sign === "~") {
+        description = `${testCase.start_number}~${testCase.end_number} (${expected_count})`;
+      } else if (testCase.sign === "X") {
+        description = `${testCase.start_number}X (${expected_count})`;
+      } else if (testCase.sign === "") {
+        description = `${testCase.start_number} (${expected_count})`;
+      }
+
+      console.log(`Generated ${expected_count} values for ${description}`);
+
+      testCases.push({
+        start_number: testCase.start_number,
+        end_number: testCase.end_number || undefined,
+        sign: testCase.sign,
+        syntax_type: testCase.syntax_type,
+        expected_count,
+        expected_values,
+        description,
+      });
     } catch (error) {
-      console.error(`Error generating data for ${testCase.key}:`, error);
+      console.error(`Error generating data for ${testCase.start_number}${testCase.sign}${testCase.end_number || ""}:`, error);
     }
   }
+
   await insertTestCases(pool, testCases);
   await pool.end();
   console.log(`\nTest data generated successfully!`);
-  console.log(`Database: test_cases table in your local Postgres`);
+  console.log(`Database: number_utils_test_cases table in your local Postgres`);
   console.log(`Total test cases: ${testCases.length}`);
 }
 

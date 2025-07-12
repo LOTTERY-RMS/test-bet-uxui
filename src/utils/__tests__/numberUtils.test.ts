@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import { setupTestDatabase, getTestCases } from "./setup-test-db";
 
 import {
@@ -12,24 +12,6 @@ import {
   processInputNumber,
   type ProcessInputNumberResult,
 } from "../numberUtils";
-
-// Load test data from PostgreSQL database
-async function loadTestCases() {
-  // Use Vitest's built-in logger for test output
-
-  const pool = await setupTestDatabase();
-  const testCases = await getTestCases(pool);
-  await pool.end();
-  return testCases;
-}
-
-// Load test cases synchronously for tests
-let testCases: Record<string, { count: number; values: string[] }> = {};
-
-// Initialize test cases before running tests
-beforeAll(async () => {
-  testCases = await loadTestCases();
-});
 
 describe("numberUtils", () => {
   describe("VALID_FINAL_INPUT_PATTERNS", () => {
@@ -308,203 +290,53 @@ describe("numberUtils", () => {
   });
 });
 
-describe("integration: real-world cases", () => {
-  it("10> (10) => 10, 11, 12, 13, 14, 15, 16, 17, 18, 19", () => {
-    expect(generateMappedTwoDigitRangeCombinations("10")).toEqual(["10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]);
-  });
-  it("01> (10) => 01, 02, 03, 04, 05, 06, 07, 08, 09, 10", () => {
-    expect(generateMappedTwoDigitRangeCombinations("01")).toEqual(["01", "02", "03", "04", "05", "06", "07", "08", "09", "10"]);
-  });
-  it("01>91 (10) => 01, 11, 21, 31, 41, 51, 61, 71, 81, 91", () => {
-    expect(generateMappedTwoDigitRangeCombinations("01", "91")).toEqual(["01", "11", "21", "31", "41", "51", "61", "71", "81", "91"]);
-  });
-  it("01>04 (4) => 01, 02, 03, 04", () => {
-    const { count, values } = testCases["01>04"];
-    const result = generateMappedTwoDigitRangeCombinations("01", "04");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("05>09 (5) => 05, 06, 07, 08, 09", () => {
-    const { count, values } = testCases["05>09"];
-    const result = generateMappedTwoDigitRangeCombinations("05", "09");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("51>91 (5) => 51, 61, 71, 81, 91", () => {
-    const { count, values } = testCases["51>91"];
-    const result = generateMappedTwoDigitRangeCombinations("51", "91");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("10>19 (10) => 10, 11, 12, 13, 14, 15, 16, 17, 18, 19", () => {
-    const { count, values } = testCases["10>19"];
-    const result = generateMappedTwoDigitRangeCombinations("10", "19");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("01>91 (10) => 01, 11, 21, 31, 41, 51, 61, 71, 81, 91", () => {
-    const { count, values } = testCases["01>91"];
-    const result = generateMappedTwoDigitRangeCombinations("01", "91");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("000>999 (10) => 000, 111, 222, 333, 444, 555, 666, 777, 888, 999", () => {
-    const { count, values } = testCases["000>999"];
-    const result = generateMappedThreeDigitRangeCombinations("000", "999");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("100> (10) => 100, 101, 102, 103, 104, 105, 106, 107, 108, 109", () => {
-    const { count, values } = testCases["100>109"];
-    const result = generateMappedThreeDigitRangeCombinations("100");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("120> (10) => 120, 121, 122, 123, 124, 125, 126, 127, 128, 129", () => {
-    const { count, values } = testCases["120>129"];
-    const result = generateMappedThreeDigitRangeCombinations("120");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("100>199 (100) => 100, 101, ..., 199", () => {
-    const expected = [];
-    for (let i = 100; i <= 199; i++) {
-      expected.push(i.toString());
-    }
-    expect(generateSimpleRangeCombinations("100", "199", "3D")).toEqual(expected);
-  });
-  it("401>491 (10) => 401, 411, 421, 431, 441, 451, 461, 471, 481, 491", () => {
-    const { count, values } = testCases["401>491"];
-    const result = generateMappedThreeDigitRangeCombinations("401", "491");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("12X (2) => 12, 21", () => {
-    const { count, values } = testCases["12X"];
-    const result = generateDigitPermutations("12", "2D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("123X (6) => 123, 132, 213, 231, 312, 321", () => {
-    const { count, values } = testCases["123X"];
-    const result = generateDigitPermutations("123", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("1112X (4) => 111, 112, 121, 211", () => {
-    const { count, values } = testCases["1112X"];
-    const result = generateDigitPermutations("1112", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("1122X (6) => 112, 121, 122, 211, 212, 221", () => {
-    const { count, values } = testCases["1122X"];
-    const result = generateDigitPermutations("1122", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("1123X (12) => 112, 113, 121, 123, 131, 132, 211, 213, 231, 311, 312, 321", () => {
-    const { count, values } = testCases["1123X"];
-    const result = generateDigitPermutations("1123", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("1234X (24) => 123, 124, 132, 134, ..., 421, 423, 431, 432", () => {
-    const { count, values } = testCases["1234X"];
-    const result = generateDigitPermutations("1234", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("11122X (7) => 111, 112, 121, 122, 211, 212, 221", () => {
-    const { count, values } = testCases["11122X"];
-    const result = generateDigitPermutations("11122", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("11123X (13) => 111, 112, 113, 121, ..., 231, 311, 312, 321", () => {
-    const { count, values } = testCases["11123X"];
-    const result = generateDigitPermutations("11123", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("11223X (18) => 112, 113, 121, 122, ..., 311, 312, 321, 322", () => {
-    const { count, values } = testCases["11223X"];
-    const result = generateDigitPermutations("11223", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("11234X (33) => 112, 113, 114, 121, ..., 421, 423, 431, 432", () => {
-    const { count, values } = testCases["11234X"];
-    const result = generateDigitPermutations("11234", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("12345X (60) => 123, 124, 125, 132, ..., 534, 541, 542, 543", () => {
-    const { count, values } = testCases["12345X"];
-    const result = generateDigitPermutations("12345", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("111222X (8) => 111, 112, 121, 122, 211, 212, 221, 222", () => {
-    const { count, values } = testCases["111222X"];
-    const result = generateDigitPermutations("111222", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("111223X (19) => 111, 112, 113, 121, 122, 123, 131, 132, 211, 212, 213, 221, 223, 231, 232, 311, 312, 321, 322", () => {
-    const { count, values } = testCases["111223X"];
-    const result = generateDigitPermutations("111223", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("112233X (24) => 112, 113, 121, 122, ..., 322, 323, 331, 332", () => {
-    const { count, values } = testCases["112233X"];
-    const result = generateDigitPermutations("112233", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("111234X (34) => 111, 112, 113, 114, ..., 421, 423, 431, 432", () => {
-    const { count, values } = testCases["111234X"];
-    const result = generateDigitPermutations("111234", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("112234X (42) => 112, 113, 114, 121, ..., 422, 423, 431, 432", () => {
-    const { count, values } = testCases["112234X"];
-    const result = generateDigitPermutations("112234", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("112345X (72) => 112, 113, 114, 115, ..., 534, 541, 542, 543", () => {
-    const { count, values } = testCases["112345X"];
-    const result = generateDigitPermutations("112345", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("123456X (120) => 120 permutations, includes 123, 124, 125, 126, 132, 135, 654", () => {
-    const { count, values } = testCases["123456X"];
-    const result = generateDigitPermutations("123456", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("1234567X (210) => 210 permutations, includes 123, 124, 125, 126, 127, 321, 765", () => {
-    const { count, values } = testCases["1234567X"];
-    const result = generateDigitPermutations("1234567", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("12345678X (336) => 336 permutations, includes 123, 124, 125, 126, 127, 128, 876", () => {
-    const { count, values } = testCases["12345678X"];
-    const result = generateDigitPermutations("12345678", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
-  it("123456789X (504) => 504 permutations, includes 123, 124, 125, 126, 127, 128, 129, 987", () => {
-    const { count, values } = testCases["123456789X"];
-    const result = generateDigitPermutations("123456789", "3D");
-    expect(result.length).toBe(count);
-    expect(result).toEqual(values);
-  });
+describe("integration: data-driven test cases", async () => {
+  const pool = await setupTestDatabase();
+  const testCases = await getTestCases(pool);
+  await pool.end();
+
+  for (const testCase of testCases) {
+    it(`[Generate] ${testCase.description}`, () => {
+      let result: string[] = [];
+      if (testCase.sign === ">") {
+        if (testCase.syntax_type === "2D") {
+          result = generateMappedTwoDigitRangeCombinations(testCase.start_number!, testCase.end_number);
+        } else {
+          result = generateMappedThreeDigitRangeCombinations(testCase.start_number!, testCase.end_number);
+        }
+      } else if (testCase.sign === "~") {
+        result = generateSimpleRangeCombinations(testCase.start_number!, testCase.end_number!, testCase.syntax_type);
+      } else if (testCase.sign === "X") {
+        result = generateDigitPermutations(testCase.start_number!, testCase.syntax_type);
+      } else if (testCase.sign === "") {
+        // Single number case
+        result = [testCase.start_number!];
+      }
+      expect(result.length).toBe(testCase.expected_count);
+      expect(result).toEqual(testCase.expected_values);
+    });
+
+    it(`[processInputNumber] ${testCase.description}`, () => {
+      const mockChannels = [
+        { id: "A", label: "A", multipliers: { "2D": 2, "3D": 3 } },
+        { id: "B", label: "B", multipliers: { "2D": 1, "3D": 1 } },
+      ];
+      const betAmount = 10;
+      // Use start_number + sign + (end_number if present) as input
+      const input = testCase.start_number + testCase.sign + (testCase.end_number || "");
+      const processResult = processInputNumber(input, mockChannels, betAmount);
+      if ("combinedNumbers" in processResult) {
+        expect(processResult.combinedNumbers).toEqual(testCase.expected_values);
+        expect(processResult.numberOfCombinations).toBe(testCase.expected_count);
+        expect(processResult.syntaxType).toBe(testCase.syntax_type);
+        const expectedMultiplier = testCase.syntax_type === "2D" ? 3 : 4;
+        const expectedTotalAmount = (betAmount * expectedMultiplier * testCase.expected_count).toFixed(2);
+        expect(processResult.totalAmount).toBe(expectedTotalAmount);
+      } else {
+        throw new Error(`processInputNumber returned error: ${processResult.error}`);
+      }
+    });
+  }
 });
 
 describe("negative test cases", () => {

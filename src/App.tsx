@@ -6,6 +6,7 @@ import "./App.css";
 import CalculatorPad from "./components/CalculatorPad/CalculatorPad";
 import ChannelSelector from "./components/ChannelSelector/ChannelSelector";
 import { processInputNumber } from "./utils/numberUtils";
+import { APP_CONFIG, ERROR_MESSAGES } from "./constants";
 
 const { Option } = Select;
 
@@ -62,28 +63,44 @@ function App() {
   const [channelsButtons, setChannelsButtons] = useState<ChannelButton[]>([]);
   const [pButtons, setPButtons] = useState<PButton[]>([]);
   const [servers, setServers] = useState<Server[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const { message } = AntApp.useApp();
 
   /** Load server data from JSON and initialize enteredNumbers from localStorage on mount. */
   useEffect(() => {
-    fetch("data/servers.json")
+    setIsLoading(true);
+    fetch(APP_CONFIG.API_ENDPOINTS.SERVERS_DATA)
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         return response.json();
       })
-      .then((data) => setServers(data))
-      .catch((error) => message.error("Failed to load server data: " + error.message));
+      .then((data) => {
+        setServers(data);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        console.error(ERROR_MESSAGES.LOAD_SERVER_DATA, error);
+        message.error(ERROR_MESSAGES.LOAD_SERVER_DATA + error.message);
+        setIsLoading(false);
+      });
 
-    const savedNumbers = localStorage.getItem("enteredNumbers");
+    const savedNumbers = localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ENTERED_NUMBERS);
     if (savedNumbers) {
-      setEnteredNumbers(JSON.parse(savedNumbers));
+      try {
+        const parsed = JSON.parse(savedNumbers);
+        setEnteredNumbers(parsed);
+      } catch (error) {
+        console.error(ERROR_MESSAGES.LOAD_SAVED_DATA, error);
+        message.error(ERROR_MESSAGES.LOAD_SAVED_DATA);
+        localStorage.removeItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ENTERED_NUMBERS);
+      }
     }
   }, [message]);
 
   /** Save enteredNumbers to localStorage whenever it updates. */
   useEffect(() => {
-    localStorage.setItem("enteredNumbers", JSON.stringify(enteredNumbers));
+    localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ENTERED_NUMBERS, JSON.stringify(enteredNumbers));
   }, [enteredNumbers]);
 
   /** Update channels and P buttons when server or server time changes.
@@ -296,85 +313,100 @@ function App() {
     [channelsButtons]
   );
 
-  // Get available server times based on selected server
-  const availableServerTimes = selectedServer ? servers.find((server) => server.id === selectedServer)?.times || [] : [];
+  /** Memoized available server times to prevent unnecessary recalculations */
+  const availableServerTimes = useMemo(() => (selectedServer ? servers.find((server) => server.id === selectedServer)?.times || [] : []), [selectedServer, servers]);
 
   return (
     <AntApp>
       <div className="container">
-        <Row gutter={[20, 20]} style={{ width: "100%" }}>
-          <Col span={8}>
-            <Row gutter={[10, 10]}>
-              <Col span={10}>
-                {/* Server and Server Time selectors */}
-                <div style={{ marginBottom: "15px" }}>
-                  <Select placeholder="Select Server" style={{ width: "100%", marginBottom: "10px" }} onChange={handleServerChange} value={selectedServer} aria-label="Server selection">
-                    {servers.map((server) => (
-                      <Option key={server.id} value={server.id}>
-                        {server.label}
-                      </Option>
-                    ))}
-                  </Select>
-                  <Select
-                    placeholder="Select Server Time"
-                    style={{ width: "100%" }}
-                    onChange={handleServerTimeChange}
-                    value={selectedServerTime}
-                    disabled={!selectedServer}
-                    aria-label="Server time selection"
-                  >
-                    {availableServerTimes.map((time) => (
-                      <Option key={time.id} value={time.id}>
-                        {time.label}
-                      </Option>
-                    ))}
-                    elicit
-                  </Select>
-                </div>
-                {/* Channel and P buttons container */}
-                <ChannelSelector channelsButtons={channelsButtons} pButtons={pButtons} setChannelsButtons={setChannelsButtons} setPButtons={setPButtons} selectedServerTime={selectedServerTime} />
-              </Col>
-              <Col span={14}>
-                <CalculatorPad input={input} onInputChange={handleCalculatorInputChange} />
-                <div style={{ marginTop: "15px" }}>
-                  <Row>
-                    <Col span={19}>
-                      <Input
-                        placeholder="Enter Amount"
-                        value={amountInput}
-                        onChange={handleAmountInputChange}
-                        onBlur={handleAmountInputBlur}
-                        style={{ width: "100%" }}
-                        disabled={!selectedServerTime}
-                        aria-label="Betting amount input"
-                      />
-                    </Col>
-                    <Col span={5}>
-                      <Select placeholder="Select Currency" style={{ width: "100%", marginLeft: "5px" }} onChange={handleCurrencyChange} value={selectedCurrency} aria-label="Currency selection">
-                        <Option value="USD">USD</Option>
-                        <Option value="KHR">KHR</Option>
-                      </Select>
-                    </Col>
-                  </Row>
-                </div>
-              </Col>
-            </Row>
-            {/* Enter button */}
-            <Row style={{ marginTop: "15px" }}>
-              <Col span={24}>
-                <Button onClick={handleEnterClick} className="antd-calc-button-enter" block disabled={!selectedServerTime} aria-label="Submit entry">
-                  Enter
-                </Button>
-              </Col>
-            </Row>
-          </Col>
-          <Col span={16}>
-            <div className="entered-numbers-table">
-              <h2>Entered Data</h2>
-              <Table dataSource={enteredNumbers} columns={columns} pagination={false} size="small" scroll={{ y: 700 }} aria-label="Entered numbers table" />
-            </div>
-          </Col>
-        </Row>
+        {isLoading ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "200px",
+              fontSize: "18px",
+              color: "#666",
+            }}
+          >
+            Loading server data...
+          </div>
+        ) : (
+          <Row gutter={[20, 20]} style={{ width: "100%" }}>
+            <Col span={8}>
+              <Row gutter={[10, 10]}>
+                <Col span={10}>
+                  {/* Server and Server Time selectors */}
+                  <div style={{ marginBottom: "15px" }}>
+                    <Select placeholder="Select Server" style={{ width: "100%", marginBottom: "10px" }} onChange={handleServerChange} value={selectedServer || null} aria-label="Server selection">
+                      {servers.map((server) => (
+                        <Option key={server.id} value={server.id}>
+                          {server.label}
+                        </Option>
+                      ))}
+                    </Select>
+                    <Select
+                      placeholder="Select Server Time"
+                      style={{ width: "100%" }}
+                      onChange={handleServerTimeChange}
+                      value={selectedServerTime || null}
+                      disabled={!selectedServer}
+                      aria-label="Server time selection"
+                    >
+                      {availableServerTimes.map((time) => (
+                        <Option key={time.id} value={time.id}>
+                          {time.label}
+                        </Option>
+                      ))}
+                      elicit
+                    </Select>
+                  </div>
+                  {/* Channel and P buttons container */}
+                  <ChannelSelector channelsButtons={channelsButtons} pButtons={pButtons} setChannelsButtons={setChannelsButtons} setPButtons={setPButtons} selectedServerTime={selectedServerTime} />
+                </Col>
+                <Col span={14}>
+                  <CalculatorPad input={input} onInputChange={handleCalculatorInputChange} />
+                  <div style={{ marginTop: "15px" }}>
+                    <Row>
+                      <Col span={19}>
+                        <Input
+                          placeholder="Enter Amount"
+                          value={amountInput}
+                          onChange={handleAmountInputChange}
+                          onBlur={handleAmountInputBlur}
+                          style={{ width: "100%" }}
+                          disabled={!selectedServerTime}
+                          aria-label="Betting amount input"
+                        />
+                      </Col>
+                      <Col span={5}>
+                        <Select placeholder="Select Currency" style={{ width: "100%", marginLeft: "5px" }} onChange={handleCurrencyChange} value={selectedCurrency} aria-label="Currency selection">
+                          <Option value="USD">USD</Option>
+                          <Option value="KHR">KHR</Option>
+                        </Select>
+                      </Col>
+                    </Row>
+                  </div>
+                </Col>
+              </Row>
+              {/* Enter button */}
+              <Row style={{ marginTop: "15px" }}>
+                <Col span={24}>
+                  <Button onClick={handleEnterClick} className="antd-calc-button-enter" block disabled={!selectedServerTime} aria-label="Submit entry">
+                    Enter
+                  </Button>
+                </Col>
+              </Row>
+            </Col>
+            <Col span={16}>
+              <div className="entered-numbers-table">
+                <h2>Entered Data</h2>
+                <Table dataSource={enteredNumbers} columns={columns} pagination={false} size="small" scroll={{ y: 700 }} aria-label="Entered numbers table" />
+              </div>
+            </Col>
+          </Row>
+        )}
       </div>
     </AntApp>
   );

@@ -6,8 +6,7 @@ import "./CalculatorPad.css";
 const VALID_FINAL_INPUT_PATTERNS = [
   /^\d{2}$/, // ## (e.g., 12)
   /^\d{3}$/, // ### (e.g., 123)
-  /^\d{2}X$/, // ##X (e.g., 12X)
-  /^\d{3}X$/, // ###X (e.g., 123X)
+  /^\d{2,}X$/, // ##X, ###X, ####X, etc. (permutations with frequency rules)
   /^\d{2}>$/, // ##> (e.g., 12>)
   /^\d{3}>$/, // ###> (e.g., 123>)
   /^\d{3}>\d{3}$/, // ###>### (e.g., 123>125)
@@ -28,6 +27,22 @@ interface CalculatorPadProps {
 const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(({ input, onInputChange }) => {
   const { message } = AntApp.useApp();
 
+  /** Validates frequency rules for X inputs (single digit can appear at most 3 times).
+   * @param digitsPart The digits part of the input (e.g., "1112", "11222").
+   * @returns True if the frequency rules are satisfied, false otherwise.
+   * Examples:
+   * - isValidXFrequency("1112") → true (1 appears 3 times, 2 appears 1 time)
+   * - isValidXFrequency("1111") → false (1 appears 4 times, exceeds limit)
+   * - isValidXFrequency("11222") → true (1 appears 2 times, 2 appears 3 times)
+   */
+  const isValidXFrequency = (digitsPart: string): boolean => {
+    const digitCount: { [key: string]: number } = {};
+    for (const digit of digitsPart) {
+      digitCount[digit] = (digitCount[digit] || 0) + 1;
+    }
+    return Object.values(digitCount).every((count) => count <= 3);
+  };
+
   /** Checks if a potential input is a valid prefix for allowed patterns.
    * Allows intermediate states that could lead to a valid final pattern.
    * @param potentialInput The input string to check (e.g., "12", "123>", "12~").
@@ -37,12 +52,21 @@ const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(({ input, onInput
    * - isInputValidForPrefix("12") → true (partial 2-digit number)
    * - isInputValidForPrefix("123>") → true (partial range)
    * - isInputValidForPrefix("12X4") → false (invalid sequence)
+   * - isInputValidForPrefix("1112") → true (variable-length digits)
+   * - isInputValidForPrefix("1111") → false (frequency rule violation)
    */
   const isInputValidForPrefix = (potentialInput: string): boolean => {
     if (potentialInput === "") return true;
-    if (/^\d{1,3}$/.test(potentialInput)) return true;
-    if (/^(\d{2}|\d{3})[X>~]$/.test(potentialInput)) return true;
-    if (/^(\d{2}|\d{3})[>~]\d{0,3}$/.test(potentialInput)) return true;
+    if (/^\d{1,}$/.test(potentialInput)) {
+      // For pure digit inputs, check frequency rules
+      return isValidXFrequency(potentialInput);
+    }
+    if (/^\d{2,}[X>~]$/.test(potentialInput)) {
+      // For inputs ending with operators, check frequency rules on digits part
+      const digitsPart = potentialInput.slice(0, -1);
+      return isValidXFrequency(digitsPart);
+    }
+    if (/^\d{2,}[>~]\d{0,3}$/.test(potentialInput)) return true;
     return false;
   };
 
@@ -54,9 +78,20 @@ const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(({ input, onInput
    * - isFinalInputValid("123>125") → true
    * - isFinalInputValid("12~15") → true
    * - isFinalInputValid("1234") → false
+   * - isFinalInputValid("1111X") → false (frequency rule violation)
    */
   const isFinalInputValid = (finalInput: string): boolean => {
-    return VALID_FINAL_INPUT_PATTERNS.some((regex) => regex.test(finalInput));
+    // Check basic pattern first
+    const matchesPattern = VALID_FINAL_INPUT_PATTERNS.some((regex) => regex.test(finalInput));
+    if (!matchesPattern) return false;
+
+    // For X inputs, check frequency rules
+    if (finalInput.endsWith("X")) {
+      const digitsPart = finalInput.slice(0, -1);
+      return isValidXFrequency(digitsPart);
+    }
+
+    return true;
   };
 
   /** Handles button clicks for numbers and operators.
@@ -89,6 +124,8 @@ const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(({ input, onInput
             "### (e.g., 123)",
             "##X (e.g., 12X)",
             "###X (e.g., 123X)",
+            "####X (e.g., 1112X)",
+            "#####X (e.g., 11222X)",
             "##> (e.g., 12>)",
             "###> (e.g., 123>)",
             "##>## (e.g., 12>15)",

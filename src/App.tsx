@@ -51,14 +51,14 @@ interface Server {
   times: ServerTime[];
 }
 
-/** Valid input patterns for number entry. Supports 2D, 3D, and longer formats with operators X, >, and ~.
+/** Valid input patterns for number entry. Supports 2D, 3D, and extended formats with operators X, >, and ~.
  * Examples:
  * - ##: "12" (single 2-digit number)
  * - ###: "123" (single 3-digit number)
  * - ##X: "12X" (permutations of 2 digits, e.g., ["12", "21"])
  * - ###X: "123X" (permutations of 3 digits, e.g., ["123", "132", "213", "231", "312", "321"])
- * - ####X: "1234X" (permutations of 4 digits, e.g., ["1234", "1243", "1324", ...])
- * - #####X: "12345X" (permutations of 5 digits, e.g., ["12345", "12354", "12435", ...])
+ * - ####X: "1112X" (permutations with frequency rules, e.g., ["111", "112", "211", "121"])
+ * - #####X: "11222X" (permutations with frequency rules)
  * - ##>: "10>" (range of 10 numbers, e.g., ["10", "11", ..., "19"])
  * - ###>: "120>" (range of 10 numbers, e.g., ["120", "121", ..., "129"])
  * - ##>##: "10>19" (specific 2-digit range, e.g., ["10", "11", ..., "19"])
@@ -69,8 +69,7 @@ interface Server {
 const VALID_FINAL_INPUT_PATTERNS = [
   /^\d{2}$/, // ## (e.g., 12)
   /^\d{3}$/, // ### (e.g., 123)
-  /^\d{2}X$/, // ##X (e.g., 12X)
-  /^\d{3}X$/, // ###X (e.g., 123X)
+  /^\d{2,}X$/, // ##X, ###X, ####X, etc. (permutations with frequency rules)
   /^\d{2}>$/, // ##> (e.g., 10>)
   /^\d{3}>$/, // ###> (e.g., 120>)
   /^\d{3}>\d{3}$/, // ###>### (e.g., 120>129)
@@ -94,6 +93,22 @@ const isValidDigitString = (str: string, digitLength: number): boolean => {
   return !isNaN(num) && str.length === digitLength;
 };
 
+/** Validates frequency rules for X inputs (single digit can appear at most 3 times).
+ * @param digitsPart The digits part of the input (e.g., "1112", "11222").
+ * @returns True if the frequency rules are satisfied, false otherwise.
+ * Examples:
+ * - isValidXFrequency("1112") → true (1 appears 3 times, 2 appears 1 time)
+ * - isValidXFrequency("1111") → false (1 appears 4 times, exceeds limit)
+ * - isValidXFrequency("11222") → true (1 appears 2 times, 2 appears 3 times)
+ */
+const isValidXFrequency = (digitsPart: string): boolean => {
+  const digitCount: { [key: string]: number } = {};
+  for (const digit of digitsPart) {
+    digitCount[digit] = (digitCount[digit] || 0) + 1;
+  }
+  return Object.values(digitCount).every((count) => count <= 3);
+};
+
 /** Checks if a final input string matches allowed patterns.
  * @param finalInput The input string to validate (e.g., "10X", "120>129").
  * @returns True if the input matches a valid pattern, false otherwise.
@@ -102,9 +117,20 @@ const isValidDigitString = (str: string, digitLength: number): boolean => {
  * - isFinalInputValid("120>129") → true
  * - isFinalInputValid("10~19") → true
  * - isFinalInputValid("1234") → false
+ * - isFinalInputValid("1111X") → false (frequency rule violation)
  */
 const isFinalInputValid = (finalInput: string): boolean => {
-  return VALID_FINAL_INPUT_PATTERNS.some((regex) => regex.test(finalInput));
+  // Check basic pattern first
+  const matchesPattern = VALID_FINAL_INPUT_PATTERNS.some((regex) => regex.test(finalInput));
+  if (!matchesPattern) return false;
+
+  // For X inputs, check frequency rules
+  if (finalInput.endsWith("X")) {
+    const digitsPart = finalInput.slice(0, -1);
+    return isValidXFrequency(digitsPart);
+  }
+
+  return true;
 };
 
 /** Generates permutations for a two-digit number.
@@ -148,6 +174,41 @@ const getThreeDigitPermutations = (numStr: string): string[] => {
   };
   permute(chars);
   return Array.from(new Set(result)); // Ensure unique permutations
+};
+
+/** Generates 3-digit permutations for variable-length numbers with frequency rules.
+ * @param numStr The number string (e.g., "1112", "1122", "1123", "111222").
+ * @returns Array of unique 3-digit permutations respecting frequency rules.
+ * Examples:
+ * - getVariableDigitPermutations("1112") → ["111", "112", "211", "121"] (4 permutations)
+ * - getVariableDigitPermutations("1122") → ["112", "121", "211", "221", "122", "212"] (6 permutations)
+ * - getVariableDigitPermutations("1123") → ["112", "121", "211", "113", "131", "311", "123", "132", "213", "231", "312", "321"] (12 permutations)
+ * - getVariableDigitPermutations("111222") → ["111", "222", "112", "211", "121", "221", "122", "212"] (8 permutations)
+ */
+const getVariableDigitPermutations = (numStr: string): string[] => {
+  if (numStr.length < 2) return [numStr];
+
+  const chars = numStr.split("");
+  const result: string[] = [];
+
+  // Generate all possible 3-digit combinations from the input digits
+  const generateCombinations = (arr: string[], memo: string[] = []) => {
+    if (memo.length === 3) {
+      result.push(memo.join(""));
+      return;
+    }
+
+    for (let i = 0; i < arr.length; i++) {
+      const cur = arr.splice(i, 1)[0];
+      generateCombinations(arr, memo.concat(cur));
+      arr.splice(i, 0, cur);
+    }
+  };
+
+  generateCombinations(chars);
+
+  // Remove duplicates and return
+  return Array.from(new Set(result));
 };
 
 /** Generates combinations for a simple range of 2-digit or 3-digit numbers (using ~ operator).
@@ -439,6 +500,8 @@ function App() {
         "### (e.g., 120)",
         "##X (e.g., 10X)",
         "###X (e.g., 120X)",
+        "####X (e.g., 1112X)",
+        "#####X (e.g., 11222X)",
         "##> (e.g., 10>)",
         "###> (e.g., 120>)",
         "##>## (e.g., 10>19)",
@@ -482,8 +545,14 @@ function App() {
         combinedNumbers = getThreeDigitPermutations(digitsPart);
         // Example: "123X" → ["123", "132", "213", "231", "312", "321"]
       } else {
-        message.error("Invalid number format for permutation.");
-        return;
+        // Handle variable-length permutations (4+ digits)
+        syntaxType = "3D"; // Treat as 3D syntax for digits > 3
+        combinedNumbers = getVariableDigitPermutations(digitsPart);
+        // Examples:
+        // - "1112X" → ["111", "112", "211", "121"] (4 permutations)
+        // - "1122X" → ["112", "121", "211", "221", "122", "212"] (6 permutations)
+        // - "1123X" → ["112", "121", "211", "113", "131", "311", "123", "132", "213", "231", "312", "321"] (12 permutations)
+        // - "111222X" → ["111", "222", "112", "211", "121", "221", "122", "212"] (8 permutations)
       }
       numberOfCombinations = combinedNumbers.length;
     } else if (input.includes(">")) {
@@ -554,6 +623,10 @@ function App() {
         syntaxType = "3D";
         combinedNumbers = [digitsPart];
         // Example: "120" → ["120"]
+      } else if (digitsPart.length > 3) {
+        syntaxType = "3D"; // Treat as 3D syntax for digits > 3
+        combinedNumbers = [digitsPart];
+        // Example: "1112" → ["1112"]
       } else {
         message.error("Invalid number format based on digit count.");
         return;
@@ -650,7 +723,22 @@ function App() {
         title: "Combinations List",
         key: "combinedNumbersList",
         width: "28%",
-        render: (_text, record) => record.combinedNumbers?.join(", ") || "",
+        render: (_text, record) => {
+          const combinations = record.combinedNumbers || [];
+          if (combinations.length <= 10) {
+            return combinations.join(", ");
+          } else {
+            const firstThree = combinations.slice(0, 4).join(", ");
+            const lastThree = combinations.slice(-4).join(", ");
+            return (
+              <Tooltip title={<div style={{ whiteSpace: "pre-line" }}>{combinations.join(", ")}</div>}>
+                <span>
+                  {firstThree}, ... , {lastThree}
+                </span>
+              </Tooltip>
+            );
+          }
+        },
       },
       {
         title: "Syntax",

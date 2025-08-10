@@ -1,19 +1,7 @@
 import React, { useCallback } from "react";
 import { Button, Row, Col, App as AntApp } from "antd";
 import "./CalculatorPad.css";
-
-// Define valid input patterns for the calculator
-const VALID_FINAL_INPUT_PATTERNS = [
-  /^\d{2}$/, // ## (e.g., 12)
-  /^\d{3}$/, // ### (e.g., 123)
-  /^\d{2,}X$/, // ##X, ###X, ####X, etc. (permutations with frequency rules)
-  /^\d{2}>$/, // ##> (e.g., 12>)
-  /^\d{3}>$/, // ###> (e.g., 123>)
-  /^\d{3}>\d{3}$/, // ###>### (e.g., 123>125)
-  /^\d{2}>\d{2}$/, // ##>## (e.g., 12>15)
-  /^\d{3}~\d{3}$/, // ###~### (e.g., 123~125)
-  /^\d{2}~\d{2}$/, // ##~## (e.g., 12~15)
-];
+import { isInputValidForPrefix, isSupportedBetInput } from "../../utils/numberUtils";
 
 interface CalculatorPadProps {
   input: string;
@@ -26,79 +14,6 @@ interface CalculatorPadProps {
  */
 const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(({ input, onInputChange }) => {
   const { message } = AntApp.useApp();
-
-  /** Validates frequency rules for X inputs (single digit can appear at most 3 times).
-   * @param digitsPart The digits part of the input (e.g., "1112", "11222").
-   * @returns True if the frequency rules are satisfied, false otherwise.
-   * Examples:
-   * - isValidXFrequency("1112") → true (1 appears 3 times, 2 appears 1 time)
-   * - isValidXFrequency("1111") → false (1 appears 4 times, exceeds limit)
-   * - isValidXFrequency("11222") → true (1 appears 2 times, 2 appears 3 times)
-   */
-  const isValidXFrequency = useCallback((digitSequence: string): boolean => {
-    const digitFrequency: { [key: string]: number } = {};
-    for (const digit of digitSequence) {
-      digitFrequency[digit] = (digitFrequency[digit] || 0) + 1;
-    }
-    return Object.values(digitFrequency).every((frequency) => frequency <= 3);
-  }, []);
-
-  /** Checks if a potential input is a valid prefix for allowed patterns.
-   * Allows intermediate states that could lead to a valid final pattern.
-   * @param potentialInput The input string to check (e.g., "12", "123>", "12~").
-   * @returns True if the input is a valid prefix, false otherwise.
-   * Examples:
-   * - isInputValidForPrefix("") → true (empty input)
-   * - isInputValidForPrefix("12") → true (partial 2-digit number)
-   * - isInputValidForPrefix("123>") → true (partial range)
-   * - isInputValidForPrefix("12X4") → false (invalid sequence)
-   * - isInputValidForPrefix("1112") → true (variable-length digits)
-   * - isInputValidForPrefix("1111") → false (frequency rule violation)
-   */
-  const isInputValidForPrefix = useCallback(
-    (testInput: string): boolean => {
-      if (testInput === "") return true;
-      if (/^\d{1,}$/.test(testInput)) {
-        // For pure digit inputs, check frequency rules
-        return isValidXFrequency(testInput);
-      }
-      if (/^\d{2,}[X>~]$/.test(testInput)) {
-        // For inputs ending with operators, check frequency rules on digits part
-        const digitSequence = testInput.slice(0, -1);
-        return isValidXFrequency(digitSequence);
-      }
-      if (/^\d{2,}[>~]\d{0,3}$/.test(testInput)) return true;
-      return false;
-    },
-    [isValidXFrequency]
-  );
-
-  /** Checks if a final input string matches allowed patterns.
-   * @param finalInput The input string to validate (e.g., "12X", "123>125").
-   * @returns True if the input matches a valid pattern, false otherwise.
-   * Examples:
-   * - isFinalInputValid("12X") → true
-   * - isFinalInputValid("123>125") → true
-   * - isFinalInputValid("12~15") → true
-   * - isFinalInputValid("1234") → false
-   * - isFinalInputValid("1111X") → false (frequency rule violation)
-   */
-  const isFinalInputValid = useCallback(
-    (completeInput: string): boolean => {
-      // Check basic pattern first
-      const matchesPattern = VALID_FINAL_INPUT_PATTERNS.some((pattern) => pattern.test(completeInput));
-      if (!matchesPattern) return false;
-
-      // For X inputs, check frequency rules
-      if (completeInput.endsWith("X")) {
-        const digitSequence = completeInput.slice(0, -1);
-        return isValidXFrequency(digitSequence);
-      }
-
-      return true;
-    },
-    [isValidXFrequency]
-  );
 
   /** Handles button clicks for numbers and operators.
    * Updates the input string based on valid patterns.
@@ -120,7 +35,7 @@ const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(({ input, onInput
         updatedInput = input.slice(0, -1);
       } else {
         const candidateInput = input + buttonValue;
-        if (isInputValidForPrefix(candidateInput) || isFinalInputValid(candidateInput)) {
+        if (isInputValidForPrefix(candidateInput) || isSupportedBetInput(candidateInput)) {
           // Append character if it forms a valid prefix or final pattern
           updatedInput = candidateInput;
         } else {
@@ -145,7 +60,7 @@ const CalculatorPad: React.FC<CalculatorPadProps> = React.memo(({ input, onInput
       }
       onInputChange(updatedInput);
     },
-    [input, message, onInputChange, isInputValidForPrefix, isFinalInputValid]
+    [input, message, onInputChange]
   );
 
   return (

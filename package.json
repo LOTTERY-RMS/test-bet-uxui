@@ -5,12 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:debug": "vite --mode debug",
     "build": "tsc -b && vite build",
+    "build:debug": "tsc -b && vite build --mode debug --sourcemap",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:debug": "vitest --reporter=verbose --no-coverage",
+    "test:debug-ui": "vitest --ui",
+    "debug:chrome": "start chrome --remote-debugging-port=9222 --disable-web-security --user-data-dir=/tmp/chrome-debug",
+    "debug:edge": "start msedge --remote-debugging-port=9222 --disable-web-security --user-data-dir=/tmp/edge-debug",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch"
   },
   "dependencies": {
     "antd": "^5.26.3",

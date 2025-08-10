@@ -1,29 +1,119 @@
 // Number utility functions for permutations, ranges, and validation
 
-/** Valid input patterns for number entry. Supports 2D and 3D formats with operators X, >, and ~.
+/** Validates frequency rules for X inputs (single digit can appear at most 3 times).
+ * @param digitsPart The digits part of the input (e.g., "1112", "11222").
+ * @returns True if the frequency rules are satisfied, false otherwise.
  * Examples:
- * - ##: "12" (single 2-digit number)
- * - ###: "123" (single 3-digit number)
- * - ##X: "12X" (permutations of 2 digits, e.g., ["12", "21"])
- * - ###X: "123X" (permutations of 3 digits, e.g., ["123", "132", "213", "231", "312", "321"])
- * - ##>: "10>" (range of 10 numbers, e.g., ["10", "11", ..., "19"])
- * - ###>: "120>" (range of 10 numbers, e.g., ["120", "121", ..., "129"])
- * - ##>##: "10>19" (specific 2-digit range, e.g., ["10", "11", ..., "19"])
- * - ###>###: "120>129" (specific 3-digit range, e.g., ["120", "121", ..., "129"])
- * - ##~##: "10~19" (simple 2-digit range, e.g., ["10", "11", ..., "19"])
- * - ###~###: "120~129" (simple 3-digit range, e.g., ["120", "121", ..., "129"])
+ * - isValidXFrequency("1112") → true (1 appears 3 times, 2 appears 1 time)
+ * - isValidXFrequency("1111") → false (1 appears 4 times, exceeds limit)
+ * - isValidXFrequency("11222") → true (1 appears 2 times, 2 appears 3 times)
  */
-export const VALID_FINAL_INPUT_PATTERNS = [
-  /^\d{2}$/, // ## (e.g., 12)
-  /^\d{3}$/, // ### (e.g., 123)
-  /^\d{2,}X$/, // ##X, ###X, ####X, etc. (permutations with frequency rules)
-  /^\d{2}>$/, // ##> (e.g., 10>)
-  /^\d{3}>$/, // ###> (e.g., 120>)
-  /^\d{3}>\d{3}$/, // ###>### (e.g., 120>129)
-  /^\d{2}>\d{2}$/, // ##>## (e.g., 10>19)
-  /^\d{3}~\d{3}$/, // ###~### (e.g., 120~129)
-  /^\d{2}~\d{2}$/, // ##~## (e.g., 10~19)
-];
+const isValidFrequency = (testInput: string): boolean => {
+  const digitFrequency: { [key: string]: number } = {};
+  for (const digit of testInput) {
+    digitFrequency[digit] = (digitFrequency[digit] || 0) + 1;
+  }
+  return Object.values(digitFrequency).every((frequency) => frequency <= 3 && frequency > 0);
+};
+
+const isValidXXPattern = (testInput: string): boolean => {
+  const parts = testInput.split("X");
+  const leftDigits = parts[0];
+  const middleDigits = parts[1];
+  const rightDigits = parts[2];
+
+  // Check if all three parts have unique digits (no repeated digits within each part)
+  const hasUniqueLeftDigits = leftDigits ? new Set(leftDigits).size === leftDigits.length : true;
+  const hasUniqueMiddleDigits = middleDigits ? new Set(middleDigits).size === middleDigits.length : true;
+  const hasUniqueRightDigits = rightDigits ? new Set(rightDigits).size === rightDigits.length : true;
+  return hasUniqueLeftDigits && hasUniqueMiddleDigits && hasUniqueRightDigits;
+};
+
+const isValidRangePattern = (testInput: string): boolean => {
+  const parts = testInput.split(">");
+  const leftDigits = parts[0] || "";
+  let rightDigits = parts[1] || "";
+
+  // Must have left digits
+  if (!leftDigits) return false;
+
+  // If rightDigits is empty, predict it based on leftDigits
+  if (!rightDigits) {
+    // 10> → predict 19, 100> → predict 109, 125> → predict 129
+    const leftNumber = parseInt(leftDigits, 10);
+    const decade = Math.floor(leftNumber / 10) * 10;
+    const predictedRight = decade + 9;
+    rightDigits = predictedRight.toString().padStart(leftDigits.length, "0");
+  }
+
+  const leftNumber = parseInt(leftDigits, 10) || 0;
+  const rightNumber = parseInt(rightDigits, 10) || 0;
+
+  if (leftNumber >= rightNumber) return false;
+  if (rightDigits.length !== leftDigits.length) return false;
+  // Accept any range within it's first digit length
+  if (leftDigits[0] === rightDigits[0]) return true;
+
+  // accept 111>222 or 000>999
+  const leftDigitsSet = new Set([leftDigits[0], leftDigits[1], leftDigits[2]]);
+  const rightDigitsSet = new Set([rightDigits[0], rightDigits[1], rightDigits[2]]);
+  // remove undefined before check size === 1
+  leftDigitsSet.delete(undefined as unknown as string);
+  rightDigitsSet.delete(undefined as unknown as string);
+  if (leftDigitsSet.size === 1 && rightDigitsSet.size === 1) return true;
+
+  let differentPositions = 0;
+
+  for (let i = 0; i < Math.min(leftDigits.length, rightDigits.length); i++) {
+    const leftDigit = parseInt(leftDigits[i], 10);
+    const rightDigit = parseInt(rightDigits[i], 10);
+    // Each digit must be valid (left ≤ right)
+    if (leftDigit > rightDigit) return false;
+
+    // Count different positions
+    if (leftDigit !== rightDigit) {
+      differentPositions++;
+      if (differentPositions > 1) return false;
+    }
+  }
+
+  return true;
+};
+
+/** Checks if a potential input is a valid prefix for allowed patterns.
+ * Allows intermediate states that could lead to a valid final pattern.
+ * @param potentialInput The input string to check (e.g., "12", "123>", "12~").
+ * @returns True if the input is a valid prefix, false otherwise.
+ * Examples:
+ * - isInputValidForPrefix("") → true (empty input)
+ * - isInputValidForPrefix("12") → true (partial 2-digit number)
+ * - isInputValidForPrefix("123>") → true (partial range)
+ * - isInputValidForPrefix("12X4") → false (invalid sequence)
+ * - isInputValidForPrefix("1112") → true (variable-length digits)
+ * - isInputValidForPrefix("1111") → false (frequency rule violation)
+ */
+export const isInputValidForPrefix = (testInput: string): boolean => {
+  if (testInput === "") return true;
+
+  if (/^\d{1,3}$/.test(testInput)) {
+    return true;
+  }
+  if (/^\d{1,}(?:X)?$/.test(testInput)) {
+    return isValidFrequency(testInput);
+  }
+  if (/^\d{1,}X\d{1,}(?:X(?:\d{1,})?)?$/.test(testInput)) {
+    return isValidXXPattern(testInput);
+  }
+  if (/^\d{2,3}>(?:\d{1,3})?$/.test(testInput)) {
+    if (/^\d{2}>\d{2}$/.test(testInput) || /^\d{3}>\d{3}$/.test(testInput)) {
+      return isValidRangePattern(testInput);
+    } else {
+      return true;
+    }
+  }
+
+  return false;
+};
 
 /** Validates if a string is a valid number of specified digit length.
  * @param str The string to validate (e.g., "10" for 2 digits, "120" for 3 digits).
@@ -35,7 +125,7 @@ export const VALID_FINAL_INPUT_PATTERNS = [
  * - isExactLengthNumericString("123", 2) → false
  * - isExactLengthNumericString("ab", 2) → false
  */
-export const isExactLengthNumericString = (str: string, digitLength: number): boolean => {
+const isExactLengthNumericString = (str: string, digitLength: number): boolean => {
   // Check that the string is exactly the right length and contains only digits
   return str.length === digitLength && /^\d+$/.test(str);
 };
@@ -51,18 +141,19 @@ export const isExactLengthNumericString = (str: string, digitLength: number): bo
  * - isSupportedBetInput("1111X") → false (digit '1' appears 4 times)
  */
 export const isSupportedBetInput = (betInput: string): boolean => {
-  const matchesPattern = VALID_FINAL_INPUT_PATTERNS.some((pattern) => pattern.test(betInput));
-  if (!matchesPattern) return false;
-  if (betInput.endsWith("X")) {
-    const digitSequence = betInput.slice(0, -1);
-    // Inline frequency check: single digit can appear at most 3 times
-    const digitFrequency: { [key: string]: number } = {};
-    for (const digit of digitSequence) {
-      digitFrequency[digit] = (digitFrequency[digit] || 0) + 1;
-    }
-    return Object.values(digitFrequency).every((frequency) => frequency <= 3);
+  if (/^\d{2,3}$/.test(betInput)) {
+    return true;
   }
-  return true;
+  if (/^\d{2,}X$/.test(betInput)) {
+    return isValidFrequency(betInput);
+  }
+  if (/^\d{1,}X\d{1,}$/.test(betInput) || /^\d{1,}X\d{1,}X\d{1,}$/.test(betInput)) {
+    return isValidXXPattern(betInput);
+  }
+  if (/^\d{2}>(?:\d{2})?$/.test(betInput) || /^\d{3}>(?:\d{3})?$/.test(betInput)) {
+    return isValidRangePattern(betInput);
+  }
+  return false;
 };
 
 /** Generates unique 2D or 3D digit permutations.
@@ -75,7 +166,7 @@ export const isSupportedBetInput = (betInput: string): boolean => {
  * - generateDigitPermutations("123", "3D") → ["123", "132", "213", "231", "312", "321"]
  * - generateDigitPermutations("112", "3D") → ["112", "121", "211"]
  */
-export function generateDigitPermutations(digitString: string, syntaxType: "2D" | "3D"): string[] {
+const generateDigitPermutations = (digitString: string, syntaxType: "2D" | "3D"): string[] => {
   // Validate that the input contains only digits (for both 2D and 3D)
   if (!/^\d+$/.test(digitString)) return [];
 
@@ -110,7 +201,7 @@ export function generateDigitPermutations(digitString: string, syntaxType: "2D" 
 
   // Invalid syntax type
   return [];
-}
+};
 
 /** Generates combinations for a simple range of 2-digit or 3-digit numbers (using ~ operator).
  * @param startNumber The starting number string (e.g., "10", "120").
@@ -123,7 +214,7 @@ export function generateDigitPermutations(digitString: string, syntaxType: "2D" 
  * - generateSimpleRangeCombinations("19", "10", "2D") → [] (invalid: start > end)
  * - generateSimpleRangeCombinations("10", "abc", "2D") → [] (invalid: non-numeric)
  */
-export const generateSimpleRangeCombinations = (startNumber: string, endNumber: string, syntaxType: "2D" | "3D"): string[] => {
+const generateSimpleRangeCombinations = (startNumber: string, endNumber: string, syntaxType: "2D" | "3D"): string[] => {
   // Validate syntax type
   if (syntaxType !== "2D" && syntaxType !== "3D") {
     return [];
@@ -155,16 +246,17 @@ export const generateSimpleRangeCombinations = (startNumber: string, endNumber: 
  * - generateMappedTwoDigitRangeCombinations("01", "91") → ["01", "11", ..., "91"]
  * - generateMappedTwoDigitRangeCombinations("12", "23") → [] (invalid range)
  */
-export const generateMappedTwoDigitRangeCombinations = (startNumber: string, endNumber?: string): string[] => {
+const generateMappedTwoDigitRangeCombinations = (startNumber: string, endNumber?: string): string[] => {
   // Validate input: must be 2 digits
   if (!isExactLengthNumericString(startNumber, 2)) return [];
   const startValue = parseInt(startNumber, 10);
 
-  // Case 1: No endNumber, generate 10 consecutive numbers
+  // Case 1: No endNumber, generate from start to end of decade (last digit = 9)
   if (endNumber === undefined) {
     const result: string[] = [];
-    for (let i = 0; i < 10; i++) {
-      result.push((startValue + i).toString().padStart(2, "0"));
+    const endOfDecade = Math.floor(startValue / 10) * 10 + 9; // e.g., 15 -> 19, 10 -> 19, 23 -> 29
+    for (let i = startValue; i <= endOfDecade; i++) {
+      result.push(i.toString().padStart(2, "0"));
     }
     return result;
   }
@@ -233,16 +325,17 @@ export const generateMappedTwoDigitRangeCombinations = (startNumber: string, end
  * - generateMappedThreeDigitRangeCombinations("005", "995") → [] (invalid range)
  * - generateMappedThreeDigitRangeCombinations("123", "456") → [] (invalid range)
  */
-export const generateMappedThreeDigitRangeCombinations = (startNumber: string, endNumber?: string): string[] => {
+const generateMappedThreeDigitRangeCombinations = (startNumber: string, endNumber?: string): string[] => {
   const rangeCombinations: string[] = [];
   // Validate input: must be 3 digits
   if (!isExactLengthNumericString(startNumber, 3)) return [];
   const startValue = parseInt(startNumber, 10);
 
-  // Case 1: No endNumber, generate 10 consecutive numbers
-  // Example: "120" → ["120", "121", ..., "129"]
+  // Case 1: No endNumber, generate from start to end of decade (last digit = 9)
+  // Example: "120" → ["120", "121", ..., "129"], "125" → ["125", "126", ..., "129"]
   if (endNumber === undefined) {
-    for (let i = startValue; i < startValue + 10; i++) {
+    const endOfDecade = Math.floor(startValue / 10) * 10 + 9; // e.g., 125 -> 129, 120 -> 129
+    for (let i = startValue; i <= endOfDecade; i++) {
       rangeCombinations.push(i.toString().padStart(3, "0"));
     }
     return Array.from(new Set(rangeCombinations));
@@ -341,14 +434,14 @@ export function processInputNumber(
   activeChannels: { id: string; label: string; multipliers: { "2D": number; "3D": number } }[],
   betAmount: number
 ): ProcessInputNumberResult | { error: string } {
-  if (betInput.trim() === "") {
+  if (betInput?.trim() === "") {
     return { error: "Please enter a number before pressing Enter." };
   }
   if (activeChannels.length === 0) {
     return { error: "Please select at least one channel (e.g., A, B, C, Lo)." };
   }
   if (!isSupportedBetInput(betInput)) {
-    return { error: "Invalid number format. Supported formats: ##, ###, ##X, ###X, ####X, #####X, ##>, ###>, ##>##, ###>###, ##~##, ###~###." };
+    return { error: "Invalid number format. Supported formats: ##, ###, ##X, ###X, ####X, #####X, ##X##, ##X##X##, ##>, ###>, ##>##, ###>###." };
   }
   if (isNaN(betAmount)) {
     return { error: "Amount is not a valid number." };
@@ -358,7 +451,42 @@ export function processInputNumber(
   let combinedNumbers: string[] = [];
   let numberOfCombinations = 1;
 
-  if (betInput.endsWith("X")) {
+  // Handle double X and triple X patterns
+  if (/^\d{1,}X\d{1,}(?:X\d{1,})?$/.test(betInput)) {
+    const parts = betInput.split("X");
+    const leftDigits = parts[0] || "";
+    const middleDigits = parts[1] || "";
+    const rightDigits = parts[2] || "";
+
+    // Determine syntax type based on the number of parts (final combination length)
+    syntaxType = parts.length === 2 ? "2D" : "3D";
+
+    // Generate all combinations
+    if (parts.length === 2) {
+      // Double X pattern: 123X128 -> combine each digit from left with each digit from right
+      combinedNumbers = [];
+      for (const leftDigit of leftDigits) {
+        for (const rightDigit of middleDigits) {
+          // middleDigits is actually the right part for double X
+          combinedNumbers.push(leftDigit + rightDigit);
+        }
+      }
+    } else if (parts.length === 3 && rightDigits) {
+      // Triple X pattern: 123X128X456 -> combine each digit from all three parts
+      combinedNumbers = [];
+      for (const leftDigit of leftDigits) {
+        for (const middleDigit of middleDigits) {
+          for (const rightDigit of rightDigits) {
+            combinedNumbers.push(leftDigit + middleDigit + rightDigit);
+          }
+        }
+      }
+    } else {
+      return { error: "Invalid X pattern format." };
+    }
+
+    numberOfCombinations = combinedNumbers.length;
+  } else if (betInput.endsWith("X")) {
     const digitSequence = betInput.slice(0, -1);
     if (digitSequence.length === 2) {
       syntaxType = "2D";
@@ -381,7 +509,7 @@ export function processInputNumber(
       return { error: "Invalid number format for range." };
     }
     if (combinedNumbers.length === 0) {
-      return { error: "Invalid range: start number must not exceed end number." };
+      return { error: "Invalid range." };
     }
     numberOfCombinations = combinedNumbers.length;
   } else if (betInput.includes("~")) {
@@ -404,9 +532,6 @@ export function processInputNumber(
       syntaxType = "2D";
       combinedNumbers = [digitSequence];
     } else if (digitSequence.length === 3) {
-      syntaxType = "3D";
-      combinedNumbers = [digitSequence];
-    } else if (digitSequence.length > 3) {
       syntaxType = "3D";
       combinedNumbers = [digitSequence];
     } else {

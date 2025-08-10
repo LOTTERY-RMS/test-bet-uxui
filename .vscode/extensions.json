@@ -1,0 +1,22 @@
+{
+  "recommendations": [
+    "ms-vscode.vscode-typescript-next",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "ms-vscode.vscode-json",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense",
+    "ms-vscode.vscode-html",
+    "ms-vscode.vscode-css",
+    "ms-vscode.vscode-typescript",
+    "ms-vscode.vscode-javascript",
+    "ms-vscode.vscode-chrome-debug",
+    "msjsdiag.vscode-react-native",
+    "ms-vscode.vscode-node-debug2",
+    "ms-vscode.vscode-debugger-for-chrome",
+    "firefox-devtools.vscode-firefox-debug",
+    "ms-vscode.vscode-edge-debug2",
+    "vitest.explorer"
+  ]
+}

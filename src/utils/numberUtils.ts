@@ -30,7 +30,8 @@ const isValidXXPattern = (testInput: string): boolean => {
 };
 
 const isValidRangePattern = (testInput: string): boolean => {
-  const parts = testInput.split(">");
+  // Remove the X at the end if any
+  const parts = testInput.replace(/X$/, "").split(">");
   const leftDigits = parts[0] || "";
   let rightDigits = parts[1] || "";
 
@@ -104,8 +105,8 @@ export const isInputValidForPrefix = (testInput: string): boolean => {
   if (/^\d{1,}X\d{1,}(?:X(?:\d{1,})?)?$/.test(testInput)) {
     return isValidXXPattern(testInput);
   }
-  if (/^\d{2,3}>(?:\d{1,3})?$/.test(testInput)) {
-    if (/^\d{2}>\d{2}$/.test(testInput) || /^\d{3}>\d{3}$/.test(testInput)) {
+  if (/^\d{2,3}>(?:\d{1,3})?X?$/.test(testInput)) {
+    if (/^\d{2}>\d{2}X?$/.test(testInput) || /^\d{3}>\d{3}X?$/.test(testInput)) {
       return isValidRangePattern(testInput);
     } else {
       return true;
@@ -150,7 +151,7 @@ export const isSupportedBetInput = (betInput: string): boolean => {
   if (/^\d{1,}X\d{1,}$/.test(betInput) || /^\d{1,}X\d{1,}X\d{1,}$/.test(betInput)) {
     return isValidXXPattern(betInput);
   }
-  if (/^\d{2}>(?:\d{2})?$/.test(betInput) || /^\d{3}>(?:\d{3})?$/.test(betInput)) {
+  if (/^\d{2}>(?:\d{2})?X?$/.test(betInput) || /^\d{3}>(?:\d{3})?X?$/.test(betInput)) {
     return isValidRangePattern(betInput);
   }
   return false;
@@ -201,38 +202,6 @@ const generateDigitPermutations = (digitString: string, syntaxType: "2D" | "3D")
 
   // Invalid syntax type
   return [];
-};
-
-/** Generates combinations for a simple range of 2-digit or 3-digit numbers (using ~ operator).
- * @param startNumber The starting number string (e.g., "10", "120").
- * @param endNumber The ending number string (e.g., "19", "129").
- * @param syntaxType Either "2D" or "3D".
- * @returns Array of numbers in the range, padded with leading zeros.
- * Examples:
- * - generateSimpleRangeCombinations("10", "19", "2D") → ["10", "11", ..., "19"]
- * - generateSimpleRangeCombinations("120", "129", "3D") → ["120", "121", ..., "129"]
- * - generateSimpleRangeCombinations("19", "10", "2D") → [] (invalid: start > end)
- * - generateSimpleRangeCombinations("10", "abc", "2D") → [] (invalid: non-numeric)
- */
-const generateSimpleRangeCombinations = (startNumber: string, endNumber: string, syntaxType: "2D" | "3D"): string[] => {
-  // Validate syntax type
-  if (syntaxType !== "2D" && syntaxType !== "3D") {
-    return [];
-  }
-
-  const digitLength = syntaxType === "2D" ? 2 : 3;
-  if (!isExactLengthNumericString(startNumber, digitLength) || !isExactLengthNumericString(endNumber, digitLength)) {
-    return [];
-  }
-  const startValue = parseInt(startNumber, 10);
-  const endValue = parseInt(endNumber, 10);
-  if (startValue > endValue) return [];
-
-  const rangeCombinations: string[] = [];
-  for (let i = startValue; i <= endValue; i++) {
-    rangeCombinations.push(i.toString().padStart(digitLength, "0"));
-  }
-  return Array.from(new Set(rangeCombinations));
 };
 
 /** Generates combinations for a 2-digit range using the > operator.
@@ -486,17 +455,13 @@ export function processInputNumber(
     }
 
     numberOfCombinations = combinedNumbers.length;
-  } else if (betInput.endsWith("X")) {
-    const digitSequence = betInput.slice(0, -1);
-    if (digitSequence.length === 2) {
-      syntaxType = "2D";
-    } else {
-      syntaxType = "3D";
-    }
-    combinedNumbers = generateDigitPermutations(digitSequence, syntaxType);
-    numberOfCombinations = combinedNumbers.length;
   } else if (betInput.includes(">")) {
-    const rangeParts = betInput.split(">");
+    let applyAllPermutation = false;
+    if (betInput.endsWith("X")) {
+      applyAllPermutation = true;
+    }
+    // Remove X at the end of betInput
+    const rangeParts = betInput.replace(/X$/, "").split(">");
     const startNumber = rangeParts[0];
     const endNumber = rangeParts[1] || undefined;
     if (startNumber.length === 2) {
@@ -511,20 +476,27 @@ export function processInputNumber(
     if (combinedNumbers.length === 0) {
       return { error: "Invalid range." };
     }
+
+    if (applyAllPermutation) {
+      // Loop all combinedNumbers and apply Permutations
+      const allPermutations: string[] = [];
+      for (const number of combinedNumbers) {
+        const permutations = generateDigitPermutations(number, syntaxType);
+        allPermutations.push(...permutations);
+      }
+      // should distinct allPermutations
+      combinedNumbers = Array.from(new Set(allPermutations));
+    }
+
     numberOfCombinations = combinedNumbers.length;
-  } else if (betInput.includes("~")) {
-    const [startNumber, endNumber] = betInput.split("~");
-    if (startNumber.length === 2 && endNumber.length === 2) {
+  } else if (betInput.endsWith("X")) {
+    const digitSequence = betInput.slice(0, -1);
+    if (digitSequence.length === 2) {
       syntaxType = "2D";
-    } else if (startNumber.length === 3 && endNumber.length === 3) {
-      syntaxType = "3D";
     } else {
-      return { error: "Invalid number format for range." };
+      syntaxType = "3D";
     }
-    combinedNumbers = generateSimpleRangeCombinations(startNumber, endNumber, syntaxType);
-    if (combinedNumbers.length === 0) {
-      return { error: "Invalid range: start number must not exceed end number." };
-    }
+    combinedNumbers = generateDigitPermutations(digitSequence, syntaxType);
     numberOfCombinations = combinedNumbers.length;
   } else {
     const digitSequence = betInput;

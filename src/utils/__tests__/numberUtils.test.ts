@@ -474,7 +474,321 @@ describe("numberUtils", () => {
       }
     });
 
-    // Error case tests
+    // Range + X pattern tests (new functionality)
+    it("should process range + X with 2D numbers", () => {
+      const result = processInputNumber("15>X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("2D");
+        // 15..19 with X and global dedupe → {15,51,16,61,17,71,18,81,19,91}
+        expect(result.numberOfCombinations).toBe(10);
+        expect(result.combinedNumbers).toContain("51");
+        expect(result.combinedNumbers).toContain("71");
+        expect(result.combinedNumbers).not.toContain("14");
+      }
+    });
+
+    it("should process range + X with 3D numbers", () => {
+      const result = processInputNumber("125>X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // 125..129, each 3 distinct digits → 5 × 6 = 30
+        expect(result.numberOfCombinations).toBe(30);
+        expect(result.combinedNumbers).toContain("251"); // from 125X
+        expect(result.combinedNumbers).toContain("912"); // from 129X
+        expect(result.combinedNumbers).not.toContain("130");
+      }
+    });
+
+    it("should process range + X with specific range", () => {
+      const result = processInputNumber("123>129X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        expect(result.numberOfCombinations).toBe(42); // 7 × 6
+        expect(result.combinedNumbers).toContain("231");
+        expect(result.combinedNumbers).toContain("219");
+        expect(result.combinedNumbers).not.toContain("112");
+      }
+    });
+
+    it("should process range + X with repeated digits", () => {
+      const result = processInputNumber("111>119X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        expect(result.numberOfCombinations).toBe(25); // 1 + 8 × 3
+        expect(result.combinedNumbers).toContain("211");
+        expect(result.combinedNumbers).toContain("191");
+        expect(result.combinedNumbers).not.toContain("122");
+      }
+    });
+
+    it("should process range + X with mapped range", () => {
+      const result = processInputNumber("025>925X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // 025,125,...,925 → 10 numbers; entries with a repeated digit (225,525) yield 3 perms; others yield 6 → 54
+        expect(result.numberOfCombinations).toBe(54);
+        expect(result.combinedNumbers).toContain("052"); // from 025X
+        expect(result.combinedNumbers).toContain("250"); // from 025X
+        expect(result.combinedNumbers).toContain("295"); // from 925X
+        expect(result.combinedNumbers).not.toContain("135");
+      }
+    });
+
+    it("should process range + X with single digit step", () => {
+      const result = processInputNumber("00>05X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("2D");
+        // 00 (1) + 01..05 (2 each) → 11
+        expect(result.numberOfCombinations).toBe(11);
+        expect(result.combinedNumbers).toContain("10"); // from 01X
+        expect(result.combinedNumbers).toContain("50"); // from 05X
+        expect(result.combinedNumbers).not.toContain("06");
+      }
+    });
+
+    it("should process range + X with tens pattern", () => {
+      const result = processInputNumber("10>19X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("2D");
+        // {01,10,11,12,21,...,19,91} → 19
+        expect(result.numberOfCombinations).toBe(19);
+        expect(result.combinedNumbers).toContain("01"); // from 10X
+        expect(result.combinedNumbers).toContain("91"); // from 19X
+        expect(result.combinedNumbers).not.toContain("20");
+      }
+    });
+
+    it("should process range + X with hundreds pattern", () => {
+      const result = processInputNumber("100>109X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // 100 (3) + 101 (3) + 102..109 (8 × 6) = 54
+        expect(result.numberOfCombinations).toBe(54);
+        expect(result.combinedNumbers).toContain("012"); // from 102X
+        expect(result.combinedNumbers).toContain("210"); // from 102X
+        expect(result.combinedNumbers).not.toContain("200");
+      }
+    });
+
+    it("should process range + X with large span", () => {
+      const result = processInputNumber("100>199X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // All 3-digit strings containing at least one '1' → 271
+        expect(result.numberOfCombinations).toBe(271);
+        expect(result.combinedNumbers).toContain("001");
+        expect(result.combinedNumbers).toContain("910");
+        expect(result.combinedNumbers).not.toContain("200");
+      }
+    });
+
+    it("should process range + X with asymmetric range", () => {
+      const result = processInputNumber("120>129X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // 120 (6) + 121 (3) + 122 (3) + 123..129 (7 × 6) = 54
+        expect(result.numberOfCombinations).toBe(54);
+        expect(result.combinedNumbers).toContain("012"); // from 120X
+        expect(result.combinedNumbers).toContain("211"); // from 121X
+        expect(result.combinedNumbers).toContain("921"); // from 129X
+        expect(result.combinedNumbers).not.toContain("130");
+      }
+    });
+
+    // Edge cases for range + X patterns
+    it("should handle range + X with minimum range", () => {
+      const result = processInputNumber("12>12X", mockChannels, 10);
+      expect("error" in result).toBe(true);
+      if ("error" in result) {
+        expect(result.error).toContain("Invalid");
+      }
+    });
+
+    it("should handle range + X with maximum range", () => {
+      const result = processInputNumber("00>99X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("2D");
+        // Mapped range 00,11,22,...,99 → 10 numbers; X doesn't add new values for doubles
+        expect(result.numberOfCombinations).toBe(10);
+        expect(result.combinedNumbers).toContain("00");
+        expect(result.combinedNumbers).toContain("55");
+        expect(result.combinedNumbers).toContain("99");
+        expect(result.combinedNumbers).not.toContain("12");
+      }
+    });
+
+    it("should process range + X with maximum 3D mapped range", () => {
+      const result = processInputNumber("000>999X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // Mapped range 000,111,222,...,999 → 10 numbers; X doesn't add new values for triples
+        expect(result.numberOfCombinations).toBe(10);
+        expect(result.combinedNumbers).toContain("000");
+        expect(result.combinedNumbers).toContain("555");
+        expect(result.combinedNumbers).toContain("999");
+      }
+    });
+
+    // Complex range + X combinations
+    it("should process complex range + X with many digits", () => {
+      const result = processInputNumber("123>129X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        expect(result.numberOfCombinations).toBe(42); // 7 numbers × 6 permutations each
+        // Verify some key combinations exist
+        expect(result.combinedNumbers).toContain("123");
+        expect(result.combinedNumbers).toContain("321");
+        expect(result.combinedNumbers).toContain("129");
+        expect(result.combinedNumbers).toContain("921");
+        expect(result.combinedNumbers).toContain("125");
+        expect(result.combinedNumbers).toContain("521");
+      }
+    });
+
+    it("should process mapped range + X with tens pattern", () => {
+      const result = processInputNumber("01>91X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("2D");
+        // {01,10,11,21,12,31,13,41,14,51,15,61,16,71,17,81,18,91,19} → 19
+        expect(result.numberOfCombinations).toBe(19);
+        expect(result.combinedNumbers).toContain("10"); // from 01X
+        expect(result.combinedNumbers).toContain("19"); // from 91X
+        expect(result.combinedNumbers).toEqual(["01", "10", "11", "21", "12", "31", "13", "41", "14", "51", "15", "61", "16", "71", "17", "81", "18", "91", "19"]);
+        expect(result.combinedNumbers).not.toContain("00");
+      }
+    });
+
+    it("should process mapped range + X with hundreds pattern", () => {
+      const result = processInputNumber("100>199X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // Range 100..199 (100 numbers), then apply X to each and dedupe globally.
+        // Final set equals all 3-digit strings that contain at least one '1'.
+        // Count = 10^3 total (1000) minus strings with no '1' (9^3 = 729) → 271.
+        expect(result.numberOfCombinations).toBe(271);
+        // Spot-check non-trivial permutations across the union
+        expect(result.combinedNumbers).toContain("001"); // from 100X
+        expect(result.combinedNumbers).toContain("011"); // from 101X
+        expect(result.combinedNumbers).toContain("121"); // from 112X
+        expect(result.combinedNumbers).toContain("291"); // from 192X
+        expect(result.combinedNumbers).toContain("910"); // from 190X
+        expect(result.combinedNumbers).not.toContain("200"); // excludes numbers without '1'
+      }
+    });
+
+    it("should process range + X with middle digit varying (101>191X)", () => {
+      const result = processInputNumber("101>191X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // Two 1's plus one other digit: {111} + 9×3 = 28
+        expect(result.numberOfCombinations).toBe(28);
+        expect(result.combinedNumbers).toContain("110"); // from 101X
+        expect(result.combinedNumbers).toContain("011"); // from 101X
+        expect(result.combinedNumbers).toContain("911"); // from 191X
+        expect(result.combinedNumbers).not.toContain("222");
+      }
+    });
+
+    it("should process range + X with middle digit sweep (103>193X)", () => {
+      const result = processInputNumber("103>193X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // 103,113,123,133,143,153,163,173,183,193 → 6 + 3 + 6 + 3 + 6×6 = 54
+        expect(result.numberOfCombinations).toBe(54);
+        expect(result.combinedNumbers).toContain("031"); // from 103X
+        expect(result.combinedNumbers).toContain("331"); // from 133X
+        expect(result.combinedNumbers).toContain("931"); // from 193X
+        expect(result.combinedNumbers).not.toContain("200");
+      }
+    });
+
+    it("should process range + X with first digit sweep (210>910X)", () => {
+      const result = processInputNumber("210>910X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // 8 numbers × 6 permutations each = 48
+        expect(result.numberOfCombinations).toBe(48);
+        expect(result.combinedNumbers).toContain("012"); // from 210X
+        expect(result.combinedNumbers).toContain("901"); // from 910X
+        expect(result.combinedNumbers).not.toContain("110");
+      }
+    });
+
+    it("should process range + X with short tail window (540>544X)", () => {
+      const result = processInputNumber("540>544X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // 540,541,542,543 (6 each) + 544 (3) = 27
+        expect(result.numberOfCombinations).toBe(27);
+        expect(result.combinedNumbers).toContain("045"); // from 540X
+        expect(result.combinedNumbers).toContain("451"); // from 541X
+        expect(result.combinedNumbers).toContain("454"); // from 544X
+        expect(result.combinedNumbers).not.toContain("555");
+      }
+    });
+
+    it("should process range + X with first digit sweep including repeats (054>954X)", () => {
+      const result = processInputNumber("054>954X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // 8×6 + 2×3 = 54 (repeats at 454 and 554)
+        expect(result.numberOfCombinations).toBe(54);
+        expect(result.combinedNumbers).toContain("045"); // from 054X
+        expect(result.combinedNumbers).toContain("549"); // from 954X
+        expect(result.combinedNumbers).toContain("544"); // from 454X/544X set
+        expect(result.combinedNumbers).not.toContain("000");
+      }
+    });
+
+    it("should process range + X with tens sweep and fixed edges (401>491X)", () => {
+      const result = processInputNumber("401>491X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // 8×6 + 2×3 = 54 (repeats at 411 and 441)
+        expect(result.numberOfCombinations).toBe(54);
+        expect(result.combinedNumbers).toContain("014"); // from 401X
+        expect(result.combinedNumbers).toContain("941"); // from 491X
+        expect(result.combinedNumbers).toContain("411"); // from 411X
+        expect(result.combinedNumbers).not.toContain("222");
+      }
+    });
+
+    it("should process range + X with small hundreds window (100>105X)", () => {
+      const result = processInputNumber("100>105X", mockChannels, 10);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.syntaxType).toBe("3D");
+        // 100 (3) + 101 (3) + 102..105 (4×6) = 30
+        expect(result.numberOfCombinations).toBe(30);
+        expect(result.combinedNumbers).toContain("001"); // from 100X
+        expect(result.combinedNumbers).toContain("110"); // from 101X
+        expect(result.combinedNumbers).toContain("210"); // from 102X
+        expect(result.combinedNumbers).not.toContain("200");
+      }
+    });
+
+    // General error case tests
     it("should reject unsupported operators", () => {
       const result = processInputNumber("12+34", mockChannels, 10);
       expect("error" in result).toBe(true);
